@@ -280,7 +280,6 @@ function face(skin) {
 }
 
 const panel = document.querySelector('#sessions');
-const capacity = document.querySelector('#capacity');
 function statusText(status) {
   const st = STATUS[status];
   return `${st.emoji} ${st.label}`;
@@ -307,7 +306,6 @@ function renderPanel() {
       return card(skin, name, text);
     }),
   );
-  if (capacity) capacity.textContent = `${sessions.length} ${sessions.length === 1 ? 'sessão' : 'sessões'}`;
 }
 
 // ---------------------------------------------------------------- tooltip

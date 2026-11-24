@@ -7,13 +7,18 @@
   <title>My Office</title>
 </head>
 <body>
+  <header class="topbar"><div class="brand"><span class="brand-icon" aria-hidden="true">▦</span><span>my office</span></div><span class="top-label">UM ESPAÇO PARA SUAS IDEIAS</span></header>
   <main class="app">
-    <header class="topbar"><div class="brand"><span class="brand-icon" aria-hidden="true">▦</span><span>my office</span></div><span class="top-label">UM ESPAÇO PARA SUAS IDEIAS</span></header>
-    <section class="workspace" aria-labelledby="title">
-      <div class="intro"><div><p class="eyebrow">SEU ESPAÇO DE TRABALHO</p><h1 id="title">Bem-vindo ao escritório<span>.</span></h1><p class="description">Um cantinho para acompanhar quem está por aqui.</p></div><div class="capacity"><span class="capacity-icon" aria-hidden="true">▣</span><div><strong id="capacity">0 sessões</strong><small>Até 5 personagens na sala</small></div></div></div>
-      <div class="scene-frame"><div class="scene-top"><div class="scene-name"><span class="scene-dot"></span> ESCRITÓRIO <span class="scene-divider">/</span> VISÃO GERAL</div><span class="scene-label">MY OFFICE</span></div><div class="scene-body"><div class="office-wrap"><div id="office" role="img" aria-label="Escritório em pixel art; cada personagem representa uma sessão de agente aberta."></div><div id="tooltip" class="tooltip" hidden></div></div><aside class="sessions" aria-label="Sessões abertas"><p class="sessions-title">GERENTE</p><ul id="manager"></ul><p class="sessions-title">SESSÕES</p><ul id="sessions"></ul></aside></div><div class="scene-bottom"><span><span class="tiny-square"></span> Uma sala, muitas ideias.</span><span>FEITO PARA CRIAR <span class="heart">♥</span></span></div></div>
-      <footer><span>Um pequeno espaço para grandes projetos.</span><span>PIXEL OFFICE ASSETS POR 2DPIG</span></footer>
-    </section>
+    <div class="office-wrap">
+      <div id="office" role="img" aria-label="Escritório em pixel art; cada personagem representa uma sessão de agente aberta."></div>
+      <div id="tooltip" class="tooltip" hidden></div>
+    </div>
+    <aside class="sessions" aria-label="Sessões abertas">
+      <p class="sessions-title">GERENTE</p>
+      <ul id="manager"></ul>
+      <p class="sessions-title">SESSÕES</p>
+      <ul id="sessions"></ul>
+    </aside>
   </main>
   <script type="module" src="/src/main.js"></script>
 </body>
