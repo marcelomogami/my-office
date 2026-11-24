@@ -23,6 +23,8 @@ const STATUS_OF = {
   PreCompact: 'working',
   Stop: 'done',
   Interrupt: 'done', // turno do Codex interrompido pelo usuário
+  CodexModelStarted: 'working',
+  CodexModelFailed: 'error',
   StopFailure: 'error', // ou 'quota', conforme o tipo do erro (abaixo)
 };
 

@@ -176,3 +176,14 @@ test('erro e cota não vão para o café, mas vão embora depois de 4 horas', ()
   state.event({ session_id: 'a', cwd: `${P}/personal/a`, event: 'UserPromptSubmit' });
   assert.equal(state.list()[0].status, 'working');
 });
+
+test('falha do modelo mostra erro e nova tentativa retoma trabalho', () => {
+  const { state, ev } = setup();
+  ev('a', 'UserPromptSubmit');
+  ev('a', 'CodexModelFailed');
+  assert.equal(state.list()[0].status, 'error');
+  ev('a', 'CodexModelStarted');
+  assert.equal(state.list()[0].status, 'working');
+  ev('a', 'Stop');
+  assert.equal(state.list()[0].status, 'done');
+});

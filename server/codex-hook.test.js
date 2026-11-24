@@ -52,3 +52,27 @@ test('backend indisponível não bloqueia nem produz saída', () => {
   assert.equal(result.status, 0); assert.equal(result.stdout, ''); assert.equal(result.stderr, '');
   assert.ok(Date.now() - start < 1000);
 });
+
+test('falha de modelo e nova tentativa enviam somente a categoria do evento', async () => {
+  const before = received.length;
+  for (const [event, status] of [['PostModelRequest', 'failed'], ['PreModelRequest', null]]) {
+    const r = run(JSON.stringify({ session_id: event, cwd: '/x', hook_event_name: event,
+      status, error: 'mensagem privada', prompt: 'segredo', token_usage: { total_tokens: 123 } }));
+    assert.equal(r.status, 0); assert.equal(r.stdout, ''); assert.equal(r.stderr, '');
+    await waitFor(before + (event === 'PostModelRequest' ? 1 : 2));
+  }
+  assert.deepEqual(received.slice(before), [
+    { session_id: 'PostModelRequest', cwd: '/x', event: 'CodexModelFailed' },
+    { session_id: 'PreModelRequest', cwd: '/x', event: 'CodexModelStarted' },
+  ]);
+});
+
+test('resultado bem sucedido, cancelado ou desconhecido não vira erro', async () => {
+  const before = received.length;
+  for (const status of ['completed', 'cancelled', 'outro', null]) {
+    const r = run(JSON.stringify({ session_id: 'a', cwd: '/x', hook_event_name: 'PostModelRequest', status }));
+    assert.equal(r.status, 0); assert.equal(r.stdout, ''); assert.equal(r.stderr, '');
+  }
+  await new Promise((resolve) => setTimeout(resolve, 150));
+  assert.equal(received.length, before);
+});

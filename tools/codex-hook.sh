@@ -5,9 +5,13 @@
 
 url="${MY_OFFICE_URL:-http://127.0.0.1:5199}/api/evento"
 body=$(jq -c '
-  {session_id, cwd, event: .hook_event_name}
+  . as $input
+  | {session_id, cwd, event: (
+      if $input.hook_event_name == "PreModelRequest" then "CodexModelStarted"
+      elif $input.hook_event_name == "PostModelRequest" and $input.status == "failed" then "CodexModelFailed"
+      else $input.hook_event_name end)}
   | select(all(.[]; type == "string" and length > 0))
-  | select(.event as $event | ["SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "PreCompact", "Stop", "Interrupt", "SessionEnd"] | index($event))
+  | select(.event as $event | ["SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "PreCompact", "Stop", "Interrupt", "SessionEnd", "CodexModelStarted", "CodexModelFailed"] | index($event))
 ' 2>/dev/null) || exit 0
 [ -n "$body" ] || exit 0
 
