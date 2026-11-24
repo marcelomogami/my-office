@@ -142,3 +142,26 @@ test('4 horas (aqui, 5 s) sem evento: vai embora, libera a baia e volta ao agir'
   assert.equal(back.status, 'working');
   assert.equal(back.seat, seat);
 });
+
+test('StopFailure: cota para rate_limit e billing_error, erro para o resto', () => {
+  const { state } = setup();
+  const fail = (id, error) => state.event({ session_id: id, cwd: `${P}/personal/${id}`, event: 'StopFailure', error });
+  fail('a', 'rate_limit');
+  fail('b', 'billing_error');
+  fail('c', 'server_error');
+  fail('d', undefined);
+  assert.deepEqual(state.list().map((s) => s.status), ['quota', 'quota', 'error', 'error']);
+});
+
+test('erro e cota não vão para o café, mas vão embora depois de 4 horas', () => {
+  const { state, ev, advance } = setup();
+  state.event({ session_id: 'a', cwd: `${P}/personal/a`, event: 'StopFailure', error: 'rate_limit' });
+  advance(1000);
+  assert.equal(state.tick(), false);
+  assert.equal(state.list()[0].status, 'quota');
+  advance(4000);
+  state.tick();
+  assert.equal(state.list()[0].status, 'away');
+  state.event({ session_id: 'a', cwd: `${P}/personal/a`, event: 'UserPromptSubmit' });
+  assert.equal(state.list()[0].status, 'working');
+});

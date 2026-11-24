@@ -22,7 +22,15 @@ const STATUS_OF = {
   PostToolUse: 'working',
   PreCompact: 'working',
   Stop: 'done',
+  StopFailure: 'error', // ou 'quota', conforme o tipo do erro (abaixo)
 };
+
+// Tipos de erro do StopFailure que querem dizer "acabou a cota".
+const QUOTA_ERRORS = new Set(['rate_limit', 'billing_error']);
+
+// Status que, sem evento por `awayAfterMs`, vão embora da sala. Erro e cota
+// não vão para o café: ficam à vista até a sessão voltar a agir.
+const CAN_LEAVE = new Set(['idle', 'error', 'quota']);
 
 // Processo ainda existe? EPERM quer dizer que existe, só não é nosso.
 export function isAlive(pid) {
@@ -59,7 +67,7 @@ export function createState({
   }
 
   // Aplica um evento; devolve true se a lista mudou.
-  function event({ session_id: id, cwd, event: name, pid }) {
+  function event({ session_id: id, cwd, event: name, pid, error }) {
     if (name === 'SessionEnd') {
       if (!sessions.delete(id)) return false;
       arrange();
@@ -74,7 +82,7 @@ export function createState({
       arrange();
     }
     if (pid) s.pid = pid;
-    const status = STATUS_OF[name];
+    const status = name === 'StopFailure' && QUOTA_ERRORS.has(error) ? 'quota' : STATUS_OF[name];
     if (!status) return isNew;
     const before = s.status;
     s.status = status;
@@ -100,7 +108,7 @@ export function createState({
         s.status = 'idle';
         changed = true;
       }
-      if (s.status === 'idle' && quiet >= awayAfterMs) {
+      if (CAN_LEAVE.has(s.status) && quiet >= awayAfterMs) {
         s.status = 'away';
         changed = true;
       }

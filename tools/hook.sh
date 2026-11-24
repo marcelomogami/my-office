@@ -15,8 +15,16 @@
 
 url="${MY_OFFICE_URL:-http://127.0.0.1:5199}/api/evento"
 
-body=$(jq -c --arg pid "$PPID" '{session_id, cwd, event: .hook_event_name}
-              | select(all(.[]; type == "string")) | .pid = $pid' 2>/dev/null) || exit 0
+# No StopFailure vai junto o tipo do erro (`rate_limit`, `server_error`...),
+# uma palavra de uma lista fixa; a mensagem de erro em si fica de fora.
+body=$(jq -c --arg pid "$PPID" '
+  . as $in
+  | {session_id, cwd, event: .hook_event_name}
+  | select(all(.[]; type == "string"))
+  | .pid = $pid
+  | if $in.hook_event_name == "StopFailure" and ($in.error | type) == "string"
+       and ($in.error | test("^[a-z_]{1,40}$"))
+    then .error = $in.error else . end' 2>/dev/null) || exit 0
 [ -n "$body" ] || exit 0
 
 curl --silent --output /dev/null --max-time 2 --connect-timeout 1 \

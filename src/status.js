@@ -3,8 +3,8 @@
 //
 //   UserPromptSubmit, PreToolUse, PostToolUse, PreCompact -> working
 //   Stop (terminou e respondeu, ou parou com uma pergunta)  -> done
-//   falha que interrompe a sessão (API, ferramenta)         -> error
-//   limite de uso / cota atingido                           -> quota
+//   StopFailure (turno interrompido por erro da API)        -> error
+//   StopFailure com rate_limit ou billing_error             -> quota
 //   muito tempo em "done" sem novo pedido (30 min)         -> idle
 //   4 horas sem nenhum evento                               -> away
 //

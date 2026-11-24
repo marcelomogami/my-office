@@ -20,7 +20,7 @@ As sessões chegam por `POST /api/evento` com `{ "session_id", "cwd", "event" }`
 curl -X POST 127.0.0.1:5199/api/evento -d '{"session_id":"1","cwd":"'$PWD'","event":"UserPromptSubmit"}'
 ```
 
-As sessões do Claude Code chegam pelo `tools/hook.sh` (precisa de `jq` e `curl`), ligado aos eventos `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `PreCompact`, `Stop` e `SessionEnd`; ele manda só o identificador da sessão, a pasta, o nome do evento e o pid do processo do Claude Code (para o backend tirar da sala as sessões que morreram). Para deixar a sala sempre disponível, as units em `deploy/` rodam o backend como serviço do systemd do usuário, ativado por socket na porta 5199 e encerrado sozinho depois de 10 minutos sem uso:
+As sessões do Claude Code chegam pelo `tools/hook.sh` (precisa de `jq` e `curl`), ligado aos eventos `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `PreCompact`, `Stop`, `StopFailure` e `SessionEnd`; ele manda só o identificador da sessão, a pasta, o nome do evento, o tipo do erro no `StopFailure` (`rate_limit` vira cota acabou; os outros, erro) e o pid do processo do Claude Code (para o backend tirar da sala as sessões que morreram). Para deixar a sala sempre disponível, as units em `deploy/` rodam o backend como serviço do systemd do usuário, ativado por socket na porta 5199 e encerrado sozinho depois de 10 minutos sem uso:
 
 ```sh
 npm run build

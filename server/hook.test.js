@@ -53,3 +53,18 @@ test('backend fora do ar: termina na hora, com sucesso', () => {
   assert.equal(r.status, 0);
   assert.ok(Date.now() - t < 1000);
 });
+
+test('StopFailure manda o tipo do erro, nunca a mensagem', async () => {
+  const before = received.length;
+  run(JSON.stringify({
+    session_id: 'c', cwd: '/x', hook_event_name: 'StopFailure', error: 'rate_limit',
+    last_assistant_message: 'API Error: Rate limit reached', error_details: 'segredo',
+  }));
+  run(JSON.stringify({ session_id: 'd', cwd: '/x', hook_event_name: 'StopFailure', error: 'Texto Livre com espaços' }));
+  run(JSON.stringify({ session_id: 'e', cwd: '/x', hook_event_name: 'PostToolUse', error: 'rate_limit' }));
+  await waitFor(before + 3);
+  const [c, d, e] = received.slice(before).sort((x, y) => x.session_id.localeCompare(y.session_id));
+  assert.deepEqual(c, { session_id: 'c', cwd: '/x', event: 'StopFailure', pid: String(process.pid), error: 'rate_limit' });
+  assert.equal(d.error, undefined);
+  assert.equal(e.error, undefined);
+});

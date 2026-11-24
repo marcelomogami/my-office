@@ -36,6 +36,8 @@ test('eventos inválidos respondem 400', async () => {
   assert.equal((await post(null)).status, 400);
   assert.equal((await post({ session_id: 's1', cwd: '/tmp', event: 'Stop', pid: 'abc' })).status, 400);
   assert.equal((await post({ session_id: 's1', cwd: '/tmp', event: 'Stop', pid: '0' })).status, 400);
+  assert.equal((await post({ session_id: 's1', cwd: '/tmp', event: 'StopFailure', error: 'API Error: x' })).status, 400);
+  assert.equal((await post({ session_id: 's1', cwd: '/tmp', event: 'StopFailure', error: 1 })).status, 400);
 });
 
 test('corpo grande demais é cortado', async () => {
@@ -87,4 +89,9 @@ test('sessões ficam gravadas e voltam num backend novo', async () => {
   } finally {
     again.close();
   }
+});
+
+test('StopFailure com tipo de erro vira cota na lista', async () => {
+  assert.equal((await post({ session_id: 's4', cwd: '/tmp/cota', event: 'StopFailure', error: 'rate_limit' })).status, 204);
+  assert.equal(office.state.list().find((s) => s.name === 'cota').status, 'quota');
 });

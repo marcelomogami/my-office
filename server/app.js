@@ -5,7 +5,7 @@ import { loadMemory, saveMemory, loadSessions, saveSessions, MEMORY_FILE, SESSIO
 // Rotas do backend, usadas tanto pelo servidor (server/index.js) quanto pelo
 // plugin do Vite durante o desenvolvimento:
 //
-//   POST /api/evento  evento de um hook: { session_id, cwd, event, pid }
+//   POST /api/evento  evento de um hook: { session_id, cwd, event, pid, error }
 //   GET  /api/stream  server-sent events com a lista de sessões a cada mudança
 
 const scene = JSON.parse(readFileSync(new URL('../src/scene.json', import.meta.url), 'utf8'));
@@ -62,11 +62,13 @@ export function createOffice({
         return reply(res, 400);
       }
       // só os metadados combinados; qualquer outro campo é descartado
-      const { session_id, cwd, event, pid } = data ?? {};
+      const { session_id, cwd, event, pid, error } = data ?? {};
       if (![session_id, cwd, event].every((v) => typeof v === 'string' && FIELD.test(v))) return reply(res, 400);
       // pid do processo do Claude Code, opcional, para saber quando a sessão morreu
       if (pid !== undefined && !/^[1-9]\d{0,9}$/.test(String(pid))) return reply(res, 400);
-      if (state.event({ session_id, cwd, event, pid: pid && Number(pid) })) broadcast();
+      // tipo do erro do StopFailure, opcional: uma palavra, nunca a mensagem
+      if (error !== undefined && !(typeof error === 'string' && /^[a-z_]{1,40}$/.test(error))) return reply(res, 400);
+      if (state.event({ session_id, cwd, event, pid: pid && Number(pid), error })) broadcast();
       reply(res, 204);
     });
   }
