@@ -1,0 +1,19 @@
+node_modules/
+dist/
+
+# arquivos de agentes e docs locais (ver playbooks/new-project.md)
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+.claude/
+.gemini/
+docs/
+
+# segredos e configuração local
+.env
+.env.*
+*.local.json
+
+# artefatos de ferramentas
+.playwright-mcp/
+__pycache__/
