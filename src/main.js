@@ -303,7 +303,8 @@ function renderPanel() {
   panel.replaceChildren(
     ...sessions.map(({ name, status }) => {
       const skin = seatOf.has(name) && skinOf.get(name);
-      return card(skin, name, skin ? statusText(status) : 'sem lugar na sala');
+      const text = skin || status === 'away' ? statusText(status) : 'sem lugar na sala';
+      return card(skin, name, text);
     }),
   );
   if (capacity) capacity.textContent = `${sessions.length} ${sessions.length === 1 ? 'sessão' : 'sessões'}`;
@@ -370,7 +371,7 @@ if (DEMO) {
     { name: 'chat-ferramentas', status: 'quota' },
   ]);
   if (new URLSearchParams(location.search).has('ciclo')) {
-    const names = Object.keys(STATUS).filter((st) => st !== 'stress');
+    const names = Object.keys(STATUS).filter((st) => st !== 'stress' && st !== 'away');
     let k = 0;
     setInterval(() => {
       k++;

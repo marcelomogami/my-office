@@ -8,6 +8,9 @@ import { projectName, uniqueName } from './names.js';
 // A lista sai na ordem em que as sessões apareceram, já com skin e lugar.
 
 export const IDLE_AFTER_MS = 30 * 60 * 1000;
+// Sem atividade por tanto tempo, o personagem vai embora: sai da sala e
+// libera a baia, mas a sessão continua no quadro lateral até voltar a agir.
+export const AWAY_AFTER_MS = 4 * 60 * 60 * 1000;
 
 // Evento do Claude Code -> status. Eventos fora da lista (Notification,
 // SubagentStop...) são ignorados: o Notification de "esperando você" chega
@@ -40,6 +43,7 @@ export function createState({
   onMemoryChange = () => {},
   now = Date.now,
   idleAfterMs = IDLE_AFTER_MS,
+  awayAfterMs = AWAY_AFTER_MS,
   alive = isAlive,
   saved = [],
 }) {
@@ -48,7 +52,7 @@ export function createState({
   let placed = { skins: new Map(), seats: new Map() };
 
   function arrange() {
-    const names = [...sessions.values()].map((s) => s.name);
+    const names = [...sessions.values()].filter((s) => s.status !== 'away').map((s) => s.name);
     const result = layout(names, seatOrder, memory, placed);
     placed = { skins: result.skins, seats: result.seats };
     if (result.changed) onMemoryChange(memory);
@@ -75,11 +79,13 @@ export function createState({
     const before = s.status;
     s.status = status;
     s.since = now();
+    if (before === 'away') arrange(); // voltou: pega baia de novo
     return isNew || before !== status;
   }
 
-  // "Pronto" há mais de `idleAfterMs` vira ocioso, e sessão cujo processo
-  // morreu sai da sala; devolve true se algo mudou.
+  // "Pronto" há mais de `idleAfterMs` vira ocioso, ocioso há mais de
+  // `awayAfterMs` (desde o último evento) vai embora, e sessão cujo processo
+  // morreu sai de vez; devolve true se algo mudou.
   function tick() {
     let changed = false;
     for (const [id, s] of sessions) {
@@ -88,8 +94,14 @@ export function createState({
         changed = true;
         continue;
       }
-      if (s.status === 'done' && now() - s.since >= idleAfterMs) {
+      // `since` é o último evento: os dois prazos contam a partir dele
+      const quiet = now() - s.since;
+      if (s.status === 'done' && quiet >= idleAfterMs) {
         s.status = 'idle';
+        changed = true;
+      }
+      if (s.status === 'idle' && quiet >= awayAfterMs) {
+        s.status = 'away';
         changed = true;
       }
     }

@@ -12,7 +12,7 @@ function setup({ dead = new Set(), saved = [] } = {}) {
   let saves = 0;
   const state = createState({
     seatOrder: ORDER, memory, onMemoryChange: () => saves++, now: () => t, idleAfterMs: 1000,
-    alive: (pid) => !dead.has(pid), saved,
+    alive: (pid) => !dead.has(pid), saved, awayAfterMs: 5000,
   });
   const ev = (id, event, cwd = `${P}/personal/my-office`) => state.event({ session_id: id, cwd, event });
   return { state, ev, memory, dead, advance: (ms) => (t += ms), saves: () => saves };
@@ -119,4 +119,26 @@ test('snapshot volta num estado novo, já sem as sessões mortas', () => {
   again.advance(1000);
   again.state.tick();
   assert.equal(again.state.list()[0].status, 'idle');
+});
+
+test('4 horas (aqui, 5 s) sem evento: vai embora, libera a baia e volta ao agir', () => {
+  const { state, ev, advance } = setup();
+  ev('a', 'Stop');
+  ev('b', 'Stop', `${P}/personal/outro`);
+  const seat = state.list()[0].seat;
+  advance(1000);
+  state.tick();
+  assert.equal(state.list()[0].status, 'idle');
+  advance(3999);
+  assert.equal(state.tick(), false);
+  advance(1);
+  ev('b', 'UserPromptSubmit', `${P}/personal/outro`); // b continua ativo
+  assert.equal(state.tick(), true);
+  const [a, b] = state.list();
+  assert.deepEqual(a, { name: 'my-office', status: 'away', skin: null, seat: null });
+  assert.equal(b.status, 'working');
+  assert.equal(ev('a', 'UserPromptSubmit'), true);
+  const back = state.list()[0];
+  assert.equal(back.status, 'working');
+  assert.equal(back.seat, seat);
 });
