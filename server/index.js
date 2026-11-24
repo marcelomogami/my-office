@@ -9,6 +9,8 @@ import { createOffice } from './app.js';
 // systemd (ativação por socket), usa o socket que ele já abriu; com
 // MY_OFFICE_IDLE_EXIT_MIN, encerra sozinho depois desse tempo sem sessões e
 // sem página conectada, e o systemd volta a iniciá-lo na próxima conexão.
+// MY_OFFICE_IDLE_MIN e MY_OFFICE_AWAY_MIN mudam os prazos de "ocioso" (30) e
+// "foi embora" (240), em minutos; servem para testes.
 
 const HOST = process.env.MY_OFFICE_HOST || '127.0.0.1';
 const PORT = Number(process.env.MY_OFFICE_PORT || 5199);
@@ -48,7 +50,8 @@ function serveStatic(req, res) {
   createReadStream(file).pipe(res);
 }
 
-const office = createOffice();
+const minutes = (name) => (process.env[name] ? Number(process.env[name]) * 60_000 : undefined);
+const office = createOffice({ idleAfterMs: minutes('MY_OFFICE_IDLE_MIN'), awayAfterMs: minutes('MY_OFFICE_AWAY_MIN') });
 const server = createServer((req, res) => office.handle(req, res, () => serveStatic(req, res)));
 const fromSystemd = process.env.LISTEN_FDS === '1' && Number(process.env.LISTEN_PID) === process.pid;
 if (fromSystemd) server.listen({ fd: 3 }, () => console.log('my-office no socket do systemd'));
