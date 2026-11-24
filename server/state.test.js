@@ -38,6 +38,17 @@ test('ciclo de vida: entra, trabalha, pronto, ocioso, sai', () => {
   assert.equal(ev('a', 'SessionEnd'), false);
 });
 
+test('interrupção encerra o trabalho e inicia a contagem para ociosidade', () => {
+  const { state, ev, advance } = setup();
+  ev('a', 'UserPromptSubmit');
+  assert.equal(state.list()[0].status, 'working');
+  assert.equal(ev('a', 'Interrupt'), true);
+  assert.equal(state.list()[0].status, 'done');
+  advance(1000);
+  state.tick();
+  assert.equal(state.list()[0].status, 'idle');
+});
+
 test('eventos desconhecidos não mexem no status nem atrasam o ocioso', () => {
   const { state, ev, advance } = setup();
   ev('a', 'Stop');

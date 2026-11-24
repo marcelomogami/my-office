@@ -22,6 +22,7 @@ const STATUS_OF = {
   PostToolUse: 'working',
   PreCompact: 'working',
   Stop: 'done',
+  Interrupt: 'done', // turno do Codex interrompido pelo usuário
   StopFailure: 'error', // ou 'quota', conforme o tipo do erro (abaixo)
 };
 
