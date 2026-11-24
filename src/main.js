@@ -6,7 +6,7 @@ import background from './background.json';
 import scene from './scene.json';
 import { createBubbles } from './bubbles.js';
 import { STATUS } from './status.js';
-import { assignSkins, assignSeats, loadRemembered, saveRemembered, FIXED, SKINS } from './sessions.js';
+import { layout, loadRemembered, saveRemembered, SKINS } from './sessions.js';
 
 // Cena baseada no exemplo do 2dPig, sem o céu. A disposição está em
 // scene.json (dá para conferir com tools/compose_scene.py); este
@@ -201,33 +201,35 @@ function showSkin(id, seatId, status) {
 }
 
 // ---------------------------------------------------------------- sessões
-// Lista das sessões abertas, na ordem em que apareceram: { name, status }.
+// Lista das sessões abertas, na ordem em que apareceram. Do backend, cada uma
+// já vem com skin e lugar: { name, status, skin, seat }. Na demonstração
+// (?demo na URL), a própria página distribui e lembra no navegador.
+const DEMO = new URLSearchParams(location.search).has('demo');
 let sessions = [];
 let skinOf = new Map(); // nome da sessão -> skin
 let seatOf = new Map(); // nome da sessão -> lugar
 const SKINS_KEY = 'my-office:skins';
 const SEATS_KEY = 'my-office:seats';
-const rememberedSkins = loadRemembered(SKINS_KEY); // skin sorteada de cada sessão extra
-const rememberedSeats = loadRemembered(SEATS_KEY); // último lugar de cada sessão
+const demoMemory = DEMO ? { skins: loadRemembered(SKINS_KEY), seats: loadRemembered(SEATS_KEY) } : null;
 
-// Guarda o que mudou na memória do navegador.
-function remember(map, current, key, skip = () => false) {
-  let changed = false;
-  for (const [name, value] of current) {
-    if (!skip(name) && map.get(name) !== value) {
-      map.set(name, value);
-      changed = true;
-    }
+function arrange() {
+  if (!DEMO) {
+    skinOf = new Map(sessions.filter((s) => s.skin).map((s) => [s.name, s.skin]));
+    seatOf = new Map(sessions.filter((s) => s.skin && s.seat).map((s) => [s.name, s.seat]));
+    return;
   }
-  if (changed) saveRemembered(key, map);
+  const names = sessions.map((s) => s.name);
+  const result = layout(names, SEAT_ORDER, demoMemory, { skins: skinOf, seats: seatOf });
+  skinOf = result.skins;
+  seatOf = result.seats;
+  if (result.changed) {
+    saveRemembered(SKINS_KEY, demoMemory.skins);
+    saveRemembered(SEATS_KEY, demoMemory.seats);
+  }
 }
 
 function render() {
-  const names = sessions.map((s) => s.name);
-  skinOf = assignSkins(names, new Map([...rememberedSkins, ...skinOf]));
-  seatOf = assignSeats(names.filter((n) => skinOf.has(n)), SEAT_ORDER, new Map([...rememberedSeats, ...seatOf]));
-  remember(rememberedSkins, skinOf, SKINS_KEY, (name) => Boolean(FIXED[name]));
-  remember(rememberedSeats, seatOf, SEATS_KEY);
+  arrange();
   const occupied = new Set(seatOf.values());
   for (const [seatId, cup] of cups) cup.visible = occupied.has(seatId);
   const sessionOfSkin = new Map([...skinOf].map(([name, skin]) => [skin, name]));
@@ -240,7 +242,7 @@ function render() {
 }
 
 function setSessions(list) {
-  sessions = list.map(({ name, status }) => ({ name, status }));
+  sessions = list.map(({ name, status, skin, seat }) => ({ name, status, skin, seat }));
   render();
 }
 
@@ -345,27 +347,37 @@ app.canvas.addEventListener('pointermove', (e) => {
 });
 app.canvas.addEventListener('pointerleave', () => (tooltip.hidden = true));
 
-// ---------------------------------------------------------------- demonstração
-// Enquanto as sessões reais não estão ligadas. Com ?ciclo na URL, os status
-// giram a cada 2,5 s.
-setSessions([
-  { name: '~detran', status: 'working' },
-  { name: '~secretario', status: 'error' },
-  { name: '~secretario-dev', status: 'idle' },
-  { name: 'my-office', status: 'done' },
-  { name: 'chat-ferramentas', status: 'quota' },
-]);
-if (new URLSearchParams(location.search).has('ciclo')) {
-  const names = Object.keys(STATUS);
-  let k = 0;
-  setInterval(() => {
-    k++;
-    sessions.forEach((s, i) => (s.status = names[(k + i) % names.length]));
-    render();
-  }, 2500);
+// ---------------------------------------------------------------- sessões reais
+// O backend manda a lista completa a cada mudança; o navegador reconecta
+// sozinho se o backend cair ou reiniciar.
+if (!DEMO) {
+  const source = new EventSource('/api/stream');
+  source.onmessage = (e) => setSessions(JSON.parse(e.data));
 }
 
-// No console do navegador:
+// ---------------------------------------------------------------- demonstração
+// Com ?demo na URL, sessões fixas de exemplo; com ?demo&ciclo, os status
+// giram a cada 2,5 s.
+if (DEMO) {
+  setSessions([
+    { name: '~detran', status: 'working' },
+    { name: '~secretario', status: 'error' },
+    { name: '~secretario-dev', status: 'idle' },
+    { name: 'my-office', status: 'done' },
+    { name: 'chat-ferramentas', status: 'quota' },
+  ]);
+  if (new URLSearchParams(location.search).has('ciclo')) {
+    const names = Object.keys(STATUS).filter((st) => st !== 'stress');
+    let k = 0;
+    setInterval(() => {
+      k++;
+      sessions.forEach((s, i) => (s.status = names[(k + i) % names.length]));
+      render();
+    }, 2500);
+  }
+}
+
+// No console do navegador, para testar na demonstração:
 //   office.update('paracetacaro', 'working')  abre ou atualiza uma sessão
 //   office.close('my-office')                 fecha uma sessão
 window.office = { setSessions, update, close, statuses: Object.keys(STATUS) };

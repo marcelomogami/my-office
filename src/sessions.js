@@ -62,8 +62,8 @@ export function assignSkins(names, remembered = new Map()) {
 }
 
 // Memória de qual skin e qual lugar cada sessão ganhou, para não mudar a cada
-// recarregamento da página (uma chave para skins, outra para lugares). Fica no navegador (localStorage); se não der para
-// gravar (aba anônima, por exemplo), o sorteio só não é lembrado.
+// recarregamento. Na demonstração fica no navegador (localStorage; se não der
+// para gravar, o sorteio só não é lembrado); com o backend, num arquivo.
 export function loadRemembered(KEY) {
   try {
     return new Map(Object.entries(JSON.parse(localStorage.getItem(KEY) ?? '{}')));
@@ -104,4 +104,23 @@ export function assignSeats(names, order, remembered = new Map()) {
     if (seat) give(name, seat);
   }
   return result;
+}
+
+// Distribui skins e lugares para as sessões abertas, nesta ordem de
+// preferência: o que a sessão já tem agora (`current`), o que ela teve antes
+// (`memory`) e o sorteio. Atualiza `memory` (skins só das sessões que não são
+// fixas) e diz se ela mudou, para quem chama gravar.
+export function layout(names, seatOrder, memory, current = { skins: new Map(), seats: new Map() }) {
+  const skins = assignSkins(names, new Map([...memory.skins, ...current.skins]));
+  const seated = names.filter((n) => skins.has(n));
+  const seats = assignSeats(seated, seatOrder, new Map([...memory.seats, ...current.seats]));
+  let changed = false;
+  const keep = (map, name, value) => {
+    if (map.get(name) === value) return;
+    map.set(name, value);
+    changed = true;
+  };
+  for (const [name, skin] of skins) if (!FIXED[name]) keep(memory.skins, name, skin);
+  for (const [name, seat] of seats) keep(memory.seats, name, seat);
+  return { skins, seats, changed };
 }

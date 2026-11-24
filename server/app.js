@@ -1,0 +1,95 @@
+import { readFileSync } from 'node:fs';
+import { createState } from './state.js';
+import { loadMemory, saveMemory, MEMORY_FILE } from './memory.js';
+
+// Rotas do backend, usadas tanto pelo servidor (server/index.js) quanto pelo
+// plugin do Vite durante o desenvolvimento:
+//
+//   POST /api/evento  evento de um hook: { session_id, cwd, event, tool }
+//   GET  /api/stream  server-sent events com a lista de sessões a cada mudança
+
+const scene = JSON.parse(readFileSync(new URL('../src/scene.json', import.meta.url), 'utf8'));
+
+const MAX_BODY = 4096;
+const FIELD = /^[^\u0000-\u001f\u007f]{1,512}$/u; // texto curto, sem caracteres de controle
+const LOCAL = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1']);
+
+export function createOffice({ memoryFile = MEMORY_FILE, tickMs = 30_000, heartbeatMs = 25_000, ...options } = {}) {
+  const memory = loadMemory(memoryFile);
+  const state = createState({
+    seatOrder: scene.seatOrder,
+    memory,
+    onMemoryChange: (m) => saveMemory(m, memoryFile),
+    ...options,
+  });
+  const clients = new Set();
+
+  const payload = () => `data: ${JSON.stringify(state.list())}\n\n`;
+  const broadcast = () => {
+    const data = payload();
+    for (const res of clients) res.write(data);
+  };
+
+  const timers = [
+    setInterval(() => state.tick() && broadcast(), tickMs),
+    // comentário vazio de tempos em tempos, para proxies não fecharem o stream
+    setInterval(() => clients.forEach((res) => res.write(':\n\n')), heartbeatMs),
+  ];
+  timers.forEach((t) => t.unref());
+
+  function receive(req, res) {
+    // Eventos só da própria máquina: pela rede, a sala é só para ver.
+    if (!LOCAL.has(req.socket.remoteAddress)) return reply(res, 403);
+    let body = '';
+    req.setEncoding('utf8');
+    req.on('data', (chunk) => {
+      body += chunk;
+      if (body.length > MAX_BODY) req.destroy();
+    });
+    req.on('end', () => {
+      let data;
+      try {
+        data = JSON.parse(body);
+      } catch {
+        return reply(res, 400);
+      }
+      // só os metadados combinados; qualquer outro campo é descartado
+      const { session_id, cwd, event } = data ?? {};
+      if (![session_id, cwd, event].every((v) => typeof v === 'string' && FIELD.test(v))) return reply(res, 400);
+      if (state.event({ session_id, cwd, event })) broadcast();
+      reply(res, 204);
+    });
+  }
+
+  function stream(req, res) {
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream; charset=utf-8',
+      'Cache-Control': 'no-cache',
+      Connection: 'keep-alive',
+    });
+    res.write(payload());
+    clients.add(res);
+    req.on('close', () => clients.delete(res));
+  }
+
+  // Middleware no formato do Connect (o do Vite): o que não é da API segue.
+  function handle(req, res, next) {
+    const path = req.url.split('?')[0];
+    if (path === '/api/evento' && req.method === 'POST') return receive(req, res);
+    if (path === '/api/stream' && req.method === 'GET') return stream(req, res);
+    if (path.startsWith('/api/')) return reply(res, 404);
+    return next();
+  }
+
+  function close() {
+    timers.forEach(clearInterval);
+    for (const res of clients) res.end();
+    clients.clear();
+  }
+
+  return { handle, close, state, clients };
+}
+
+function reply(res, code) {
+  res.writeHead(code).end();
+}
