@@ -1,0 +1,10 @@
+# Escuta a porta da sala; o systemd só inicia o my-office.service na primeira
+# conexão (hook ou página).
+[Unit]
+Description=my-office: socket da sala de sessões
+
+[Socket]
+ListenStream=127.0.0.1:5199
+
+[Install]
+WantedBy=sockets.target

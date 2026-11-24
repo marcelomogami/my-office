@@ -20,7 +20,18 @@ As sessões chegam por `POST /api/evento` com `{ "session_id", "cwd", "event" }`
 curl -X POST 127.0.0.1:5199/api/evento -d '{"session_id":"1","cwd":"'$PWD'","event":"UserPromptSubmit"}'
 ```
 
-As sessões do Claude Code chegam pelo `tools/hook.sh` (precisa de `jq` e `curl`), ligado aos eventos `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `PreCompact`, `Stop` e `SessionEnd`; ele manda só o identificador da sessão, a pasta e o nome do evento. Skins e lugares sorteados ficam em `~/.local/state/my-office/memory.json`.
+As sessões do Claude Code chegam pelo `tools/hook.sh` (precisa de `jq` e `curl`), ligado aos eventos `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `PreCompact`, `Stop` e `SessionEnd`; ele manda só o identificador da sessão, a pasta e o nome do evento. Para deixar a sala sempre disponível, as units em `deploy/` rodam o backend como serviço do systemd do usuário, ativado por socket na porta 5199 e encerrado sozinho depois de 10 minutos sem uso:
+
+```sh
+npm run build
+ln -s "$PWD"/deploy/my-office.{socket,service} ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable --now my-office.socket
+```
+
+O caminho do projeto está fixo em `deploy/my-office.service` (`~/projects/personal/my-office`). Para usar o `npm run dev`, pare antes `my-office.socket` e `my-office.service`, que usam a mesma porta.
+
+Skins e lugares sorteados ficam em `~/.local/state/my-office/memory.json`.
 
 Os sprites são do [Pixel Office Asset Pack, de 2dPig](https://2dpig.itch.io/pixel-office), distribuído sob CC0.
 

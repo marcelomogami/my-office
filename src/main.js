@@ -17,6 +17,9 @@ const { crop } = scene;
 
 const app = new Application();
 await app.init({ width: crop.width * U, height: crop.height * U, background: '#41a6f6', antialias: false, preference: 'webgl' });
+// As animações são lentas (pontinhos, pulinho): 10 quadros por segundo bastam
+// e poupam a máquina com a aba aberta.
+app.ticker.maxFPS = 10;
 document.querySelector('#office').appendChild(app.canvas);
 
 const sheet = await Assets.load(sheetUrl);

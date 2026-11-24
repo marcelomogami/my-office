@@ -1,0 +1,11 @@
+# Backend da sala, iniciado pelo my-office.socket. Encerra sozinho depois de
+# 10 minutos sem sessões nem página conectada.
+[Unit]
+Description=my-office: sala de sessões de agentes
+Requires=my-office.socket
+After=my-office.socket
+
+[Service]
+ExecStart=/usr/bin/node %h/projects/personal/my-office/server/index.js
+Environment=MY_OFFICE_IDLE_EXIT_MIN=10
+NoNewPrivileges=yes
