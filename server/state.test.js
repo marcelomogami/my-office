@@ -6,13 +6,16 @@ import { createState } from './state.js';
 const ORDER = ['G', 'H', 'F', 'I', 'D', 'E'];
 const P = `${homedir()}/projects`;
 
-function setup() {
+function setup({ dead = new Set(), saved = [] } = {}) {
   let t = 0;
   const memory = { skins: new Map(), seats: new Map() };
   let saves = 0;
-  const state = createState({ seatOrder: ORDER, memory, onMemoryChange: () => saves++, now: () => t, idleAfterMs: 1000 });
+  const state = createState({
+    seatOrder: ORDER, memory, onMemoryChange: () => saves++, now: () => t, idleAfterMs: 1000,
+    alive: (pid) => !dead.has(pid), saved,
+  });
   const ev = (id, event, cwd = `${P}/personal/my-office`) => state.event({ session_id: id, cwd, event });
-  return { state, ev, memory, advance: (ms) => (t += ms), saves: () => saves };
+  return { state, ev, memory, dead, advance: (ms) => (t += ms), saves: () => saves };
 }
 
 test('ciclo de vida: entra, trabalha, pronto, ocioso, sai', () => {
@@ -94,4 +97,26 @@ test('a partir da 7ª sessão não há lugar', () => {
   const list = state.list();
   assert.equal(list.filter((s) => s.seat).length, 6);
   assert.equal(list[6].seat, null);
+});
+
+test('sessão cujo processo morreu sai da sala no tick', () => {
+  const { state, dead } = setup();
+  state.event({ session_id: 'a', cwd: `${P}/personal/a`, event: 'Stop', pid: 111 });
+  state.event({ session_id: 'b', cwd: `${P}/personal/b`, event: 'Stop', pid: 222 });
+  assert.equal(state.tick(), false);
+  dead.add(111);
+  assert.equal(state.tick(), true);
+  assert.deepEqual(state.list().map((s) => s.name), ['b']);
+});
+
+test('snapshot volta num estado novo, já sem as sessões mortas', () => {
+  const first = setup();
+  first.state.event({ session_id: 'a', cwd: `${P}/MTI/secretario`, event: 'Stop', pid: 111 });
+  first.state.event({ session_id: 'b', cwd: `${P}/personal/b`, event: 'UserPromptSubmit', pid: 222 });
+  const saved = first.state.snapshot();
+  const again = setup({ saved, dead: new Set([222]) });
+  assert.deepEqual(again.state.list(), [{ name: '~secretario', status: 'done', skin: 's6', seat: 'F' }]);
+  again.advance(1000);
+  again.state.tick();
+  assert.equal(again.state.list()[0].status, 'idle');
 });

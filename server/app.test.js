@@ -8,7 +8,8 @@ import { createOffice } from './app.js';
 
 const dir = mkdtempSync(join(tmpdir(), 'my-office-'));
 const memoryFile = join(dir, 'memory.json');
-const office = createOffice({ memoryFile });
+const sessionsFile = join(dir, 'sessions.json');
+const office = createOffice({ memoryFile, sessionsFile });
 const server = createServer((req, res) => office.handle(req, res, () => res.writeHead(418).end()));
 await new Promise((r) => server.listen(0, '127.0.0.1', r));
 const base = `http://127.0.0.1:${server.address().port}`;
@@ -33,6 +34,8 @@ test('eventos inválidos respondem 400', async () => {
   assert.equal((await post({ session_id: 's1', cwd: '/tmp' })).status, 400);
   assert.equal((await post({ session_id: 's1', cwd: '/tmp\n', event: 'Stop' })).status, 400);
   assert.equal((await post(null)).status, 400);
+  assert.equal((await post({ session_id: 's1', cwd: '/tmp', event: 'Stop', pid: 'abc' })).status, 400);
+  assert.equal((await post({ session_id: 's1', cwd: '/tmp', event: 'Stop', pid: '0' })).status, 400);
 });
 
 test('corpo grande demais é cortado', async () => {
@@ -72,4 +75,16 @@ test('stream manda a lista na conexão e a cada mudança', async () => {
   req.destroy();
   assert.equal(messages[1].length, messages[0].length + 1);
   assert.equal(messages[1].at(-1).name, 'outra');
+});
+
+test('sessões ficam gravadas e voltam num backend novo', async () => {
+  assert.equal((await post({ session_id: 's3', cwd: '/tmp/gravada', event: 'Stop', pid: String(process.pid) })).status, 204);
+  const saved = JSON.parse(readFileSync(sessionsFile, 'utf8'));
+  assert.ok(saved.some((s) => s.id === 's3' && s.pid === process.pid));
+  const again = createOffice({ memoryFile, sessionsFile });
+  try {
+    assert.ok(again.state.list().some((s) => s.name === 'gravada' && s.status === 'done'));
+  } finally {
+    again.close();
+  }
 });

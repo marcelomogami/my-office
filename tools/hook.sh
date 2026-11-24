@@ -2,8 +2,10 @@
 # Hook do Claude Code para o my-office.
 #
 # Lê o JSON que o Claude Code manda na entrada, tira dele só o identificador
-# da sessão, a pasta de trabalho e o nome do evento, e envia ao backend em
-# segundo plano. Prompt, resposta e dados de ferramenta nunca saem daqui.
+# da sessão, a pasta de trabalho e o nome do evento, junta o pid do processo
+# do Claude Code (o pai deste script, para o backend saber quando a sessão
+# morreu) e envia ao backend em segundo plano. Prompt, resposta e dados de
+# ferramenta nunca saem daqui.
 #
 # Nunca atrapalha a sessão: não escreve nada na saída (que alguns eventos
 # acrescentariam à conversa), não espera o envio e sempre termina com
@@ -13,8 +15,8 @@
 
 url="${MY_OFFICE_URL:-http://127.0.0.1:5199}/api/evento"
 
-body=$(jq -c '{session_id, cwd, event: .hook_event_name}
-              | select(all(.[]; type == "string"))' 2>/dev/null) || exit 0
+body=$(jq -c --arg pid "$PPID" '{session_id, cwd, event: .hook_event_name}
+              | select(all(.[]; type == "string")) | .pid = $pid' 2>/dev/null) || exit 0
 [ -n "$body" ] || exit 0
 
 curl --silent --output /dev/null --max-time 2 --connect-timeout 1 \

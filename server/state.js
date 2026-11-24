@@ -21,8 +21,30 @@ const STATUS_OF = {
   Stop: 'done',
 };
 
-export function createState({ seatOrder, memory, onMemoryChange = () => {}, now = Date.now, idleAfterMs = IDLE_AFTER_MS }) {
-  const sessions = new Map(); // session_id -> { name, status, since }
+// Processo ainda existe? EPERM quer dizer que existe, só não é nosso.
+export function isAlive(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (err) {
+    return err.code === 'EPERM';
+  }
+}
+
+// `saved`: sessões gravadas antes de um reinício do backend (ver snapshot()).
+// `pid` é o processo do Claude Code da sessão: quando ele some (terminal
+// fechado sem SessionEnd), a sessão sai da sala no próximo tick.
+export function createState({
+  seatOrder,
+  memory,
+  onMemoryChange = () => {},
+  now = Date.now,
+  idleAfterMs = IDLE_AFTER_MS,
+  alive = isAlive,
+  saved = [],
+}) {
+  const sessions = new Map(); // session_id -> { name, status, since, pid }
+  for (const { id, name, status, since, pid } of saved) sessions.set(id, { name, status, since, pid });
   let placed = { skins: new Map(), seats: new Map() };
 
   function arrange() {
@@ -33,7 +55,7 @@ export function createState({ seatOrder, memory, onMemoryChange = () => {}, now 
   }
 
   // Aplica um evento; devolve true se a lista mudou.
-  function event({ session_id: id, cwd, event: name }) {
+  function event({ session_id: id, cwd, event: name, pid }) {
     if (name === 'SessionEnd') {
       if (!sessions.delete(id)) return false;
       arrange();
@@ -43,10 +65,11 @@ export function createState({ seatOrder, memory, onMemoryChange = () => {}, now 
     const isNew = !s;
     if (isNew) {
       const taken = new Set([...sessions.values()].map((x) => x.name));
-      s = { name: uniqueName(projectName(cwd), taken), status: 'done', since: now() };
+      s = { name: uniqueName(projectName(cwd), taken), status: 'done', since: now(), pid };
       sessions.set(id, s);
       arrange();
     }
+    if (pid) s.pid = pid;
     const status = STATUS_OF[name];
     if (!status) return isNew;
     const before = s.status;
@@ -55,15 +78,22 @@ export function createState({ seatOrder, memory, onMemoryChange = () => {}, now 
     return isNew || before !== status;
   }
 
-  // "Pronto" há mais de `idleAfterMs` vira ocioso; devolve true se algo mudou.
+  // "Pronto" há mais de `idleAfterMs` vira ocioso, e sessão cujo processo
+  // morreu sai da sala; devolve true se algo mudou.
   function tick() {
     let changed = false;
-    for (const s of sessions.values()) {
+    for (const [id, s] of sessions) {
+      if (s.pid && !alive(s.pid)) {
+        sessions.delete(id);
+        changed = true;
+        continue;
+      }
       if (s.status === 'done' && now() - s.since >= idleAfterMs) {
         s.status = 'idle';
         changed = true;
       }
     }
+    if (changed) arrange();
     return changed;
   }
 
@@ -76,5 +106,15 @@ export function createState({ seatOrder, memory, onMemoryChange = () => {}, now 
     }));
   }
 
-  return { event, tick, list };
+  // O que precisa sobreviver a um reinício do backend.
+  function snapshot() {
+    return [...sessions].map(([id, { name, status, since, pid }]) => ({ id, name, status, since, pid }));
+  }
+
+  if (sessions.size) {
+    tick();
+    arrange();
+  }
+
+  return { event, tick, list, snapshot };
 }

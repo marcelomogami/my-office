@@ -1,11 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { createState } from './state.js';
-import { loadMemory, saveMemory, MEMORY_FILE } from './memory.js';
+import { loadMemory, saveMemory, loadSessions, saveSessions, MEMORY_FILE, SESSIONS_FILE } from './memory.js';
 
 // Rotas do backend, usadas tanto pelo servidor (server/index.js) quanto pelo
 // plugin do Vite durante o desenvolvimento:
 //
-//   POST /api/evento  evento de um hook: { session_id, cwd, event, tool }
+//   POST /api/evento  evento de um hook: { session_id, cwd, event, pid }
 //   GET  /api/stream  server-sent events com a lista de sessões a cada mudança
 
 const scene = JSON.parse(readFileSync(new URL('../src/scene.json', import.meta.url), 'utf8'));
@@ -14,18 +14,26 @@ const MAX_BODY = 4096;
 const FIELD = /^[^\u0000-\u001f\u007f]{1,512}$/u; // texto curto, sem caracteres de controle
 const LOCAL = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1']);
 
-export function createOffice({ memoryFile = MEMORY_FILE, tickMs = 30_000, heartbeatMs = 25_000, ...options } = {}) {
+export function createOffice({
+  memoryFile = MEMORY_FILE,
+  sessionsFile = SESSIONS_FILE,
+  tickMs = 30_000,
+  heartbeatMs = 25_000,
+  ...options
+} = {}) {
   const memory = loadMemory(memoryFile);
   const state = createState({
     seatOrder: scene.seatOrder,
     memory,
     onMemoryChange: (m) => saveMemory(m, memoryFile),
+    saved: loadSessions(sessionsFile),
     ...options,
   });
   const clients = new Set();
 
   const payload = () => `data: ${JSON.stringify(state.list())}\n\n`;
   const broadcast = () => {
+    saveSessions(state.snapshot(), sessionsFile);
     const data = payload();
     for (const res of clients) res.write(data);
   };
@@ -54,9 +62,11 @@ export function createOffice({ memoryFile = MEMORY_FILE, tickMs = 30_000, heartb
         return reply(res, 400);
       }
       // só os metadados combinados; qualquer outro campo é descartado
-      const { session_id, cwd, event } = data ?? {};
+      const { session_id, cwd, event, pid } = data ?? {};
       if (![session_id, cwd, event].every((v) => typeof v === 'string' && FIELD.test(v))) return reply(res, 400);
-      if (state.event({ session_id, cwd, event })) broadcast();
+      // pid do processo do Claude Code, opcional, para saber quando a sessão morreu
+      if (pid !== undefined && !/^[1-9]\d{0,9}$/.test(String(pid))) return reply(res, 400);
+      if (state.event({ session_id, cwd, event, pid: pid && Number(pid) })) broadcast();
       reply(res, 204);
     });
   }

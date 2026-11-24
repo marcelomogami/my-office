@@ -25,7 +25,7 @@ const waitFor = async (n) => {
   for (let i = 0; i < 50 && received.length < n; i++) await new Promise((r) => setTimeout(r, 20));
 };
 
-test('envia só identificador, pasta e evento', async () => {
+test('envia só identificador, pasta, evento e o pid de quem chamou', async () => {
   const r = run(JSON.stringify({
     session_id: 'a', cwd: '/x', hook_event_name: 'UserPromptSubmit',
     prompt: 'segredo', transcript_path: '/t', tool_input: { command: 'rm' },
@@ -33,7 +33,7 @@ test('envia só identificador, pasta e evento', async () => {
   assert.equal(r.status, 0);
   assert.equal(r.stdout, '');
   await waitFor(1);
-  assert.deepEqual(received.at(-1), { session_id: 'a', cwd: '/x', event: 'UserPromptSubmit' });
+  assert.deepEqual(received.at(-1), { session_id: 'a', cwd: '/x', event: 'UserPromptSubmit', pid: String(process.pid) });
 });
 
 test('entrada ruim: não envia nada e termina com sucesso', async () => {
