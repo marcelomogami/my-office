@@ -20,7 +20,7 @@ As sessões chegam por `POST /api/evento` com `{ "session_id", "cwd", "event" }`
 curl -X POST 127.0.0.1:5199/api/evento -d '{"session_id":"1","cwd":"'$PWD'","event":"UserPromptSubmit"}'
 ```
 
-Skins e lugares sorteados ficam em `~/.local/state/my-office/memory.json`.
+As sessões do Claude Code chegam pelo `tools/hook.sh` (precisa de `jq` e `curl`), ligado aos eventos `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `PreCompact`, `Stop` e `SessionEnd`; ele manda só o identificador da sessão, a pasta e o nome do evento. Skins e lugares sorteados ficam em `~/.local/state/my-office/memory.json`.
 
 Os sprites são do [Pixel Office Asset Pack, de 2dPig](https://2dpig.itch.io/pixel-office), distribuído sob CC0.
 
