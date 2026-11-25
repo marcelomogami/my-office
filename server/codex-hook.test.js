@@ -31,7 +31,7 @@ test('eventos do Codex enviam somente metadados permitidos', async () => {
   await waitFor(events.length);
   assert.equal(received.length, events.length);
   assert.deepEqual(received.slice().sort((a,b) => a.event.localeCompare(b.event)), events.map((event) => ({
-    session_id: event, cwd: '/tmp/codex', event,
+    session_id: event, cwd: '/tmp/codex', event, agent: 'codex',
   })).sort((a,b) => a.event.localeCompare(b.event)));
 });
 
@@ -62,8 +62,8 @@ test('falha de modelo e nova tentativa enviam somente a categoria do evento', as
     await waitFor(before + (event === 'PostModelRequest' ? 1 : 2));
   }
   assert.deepEqual(received.slice(before), [
-    { session_id: 'PostModelRequest', cwd: '/x', event: 'CodexModelFailed' },
-    { session_id: 'PreModelRequest', cwd: '/x', event: 'CodexModelStarted' },
+    { session_id: 'PostModelRequest', cwd: '/x', event: 'CodexModelFailed', agent: 'codex' },
+    { session_id: 'PreModelRequest', cwd: '/x', event: 'CodexModelStarted', agent: 'codex' },
   ]);
 });
 

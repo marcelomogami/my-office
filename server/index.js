@@ -3,6 +3,7 @@ import { createReadStream, statSync } from 'node:fs';
 import { extname, join, normalize, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createOffice } from './app.js';
+import { loadCodexThreads } from './codex-client.js';
 
 // Servidor da sala: as rotas da API e a página já construída (`dist/`).
 // Endereço e porta vêm de MY_OFFICE_HOST e MY_OFFICE_PORT. Iniciado pelo
@@ -11,6 +12,7 @@ import { createOffice } from './app.js';
 // sem página conectada, e o systemd volta a iniciá-lo na próxima conexão.
 // MY_OFFICE_IDLE_MIN e MY_OFFICE_AWAY_MIN mudam os prazos de "ocioso" (10) e
 // "foi embora" (240), em minutos; servem para testes.
+// MY_OFFICE_CODEX_WS aponta para o App Server local (padrão 127.0.0.1:8767).
 
 const HOST = process.env.MY_OFFICE_HOST || '127.0.0.1';
 const PORT = Number(process.env.MY_OFFICE_PORT || 5199);
@@ -51,7 +53,8 @@ function serveStatic(req, res) {
 }
 
 const minutes = (name) => (process.env[name] ? Number(process.env[name]) * 60_000 : undefined);
-const office = createOffice({ idleAfterMs: minutes('MY_OFFICE_IDLE_MIN'), awayAfterMs: minutes('MY_OFFICE_AWAY_MIN') });
+const codexUrl = process.env.MY_OFFICE_CODEX_WS || 'ws://127.0.0.1:8767';
+const office = createOffice({ idleAfterMs: minutes('MY_OFFICE_IDLE_MIN'), awayAfterMs: minutes('MY_OFFICE_AWAY_MIN'), codexLoad: () => loadCodexThreads(codexUrl) });
 const server = createServer((req, res) => office.handle(req, res, () => serveStatic(req, res)));
 const fromSystemd = process.env.LISTEN_FDS === '1' && Number(process.env.LISTEN_PID) === process.pid;
 if (fromSystemd) server.listen({ fd: 3 }, () => console.log('my-office no socket do systemd'));

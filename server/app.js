@@ -5,7 +5,7 @@ import { loadMemory, saveMemory, loadSessions, saveSessions, MEMORY_FILE, SESSIO
 // Rotas do backend, usadas tanto pelo servidor (server/index.js) quanto pelo
 // plugin do Vite durante o desenvolvimento:
 //
-//   POST /api/evento  evento de um hook: { session_id, cwd, event, pid, error }
+//   POST /api/evento  evento de um hook: { session_id, cwd, event, pid, error, agent }
 //   GET  /api/stream  server-sent events com a lista de sessões a cada mudança
 
 const scene = JSON.parse(readFileSync(new URL('../src/scene.json', import.meta.url), 'utf8'));
@@ -19,6 +19,7 @@ export function createOffice({
   sessionsFile = SESSIONS_FILE,
   tickMs = 30_000,
   heartbeatMs = 25_000,
+  codexLoad = null,
   ...options
 } = {}) {
   const memory = loadMemory(memoryFile);
@@ -38,8 +39,24 @@ export function createOffice({
     for (const res of clients) res.write(data);
   };
 
+  let checkingCodex = false;
+  let closed = false;
+  async function checkCodex() {
+    if (!codexLoad || checkingCodex) return;
+    const candidates = state.codexCandidates();
+    if (!candidates.size) return;
+    checkingCodex = true;
+    try {
+      const loaded = await codexLoad();
+      if (!closed && state.reconcileCodex(loaded, candidates)) broadcast();
+    } catch {
+      state.codexUnavailable();
+    } finally {
+      checkingCodex = false;
+    }
+  }
   const timers = [
-    setInterval(() => state.tick() && broadcast(), tickMs),
+    setInterval(() => { if (state.tick()) broadcast(); void checkCodex(); }, tickMs),
     // comentário vazio de tempos em tempos, para proxies não fecharem o stream
     setInterval(() => clients.forEach((res) => res.write(':\n\n')), heartbeatMs),
   ];
@@ -62,13 +79,14 @@ export function createOffice({
         return reply(res, 400);
       }
       // só os metadados combinados; qualquer outro campo é descartado
-      const { session_id, cwd, event, pid, error } = data ?? {};
+      const { session_id, cwd, event, pid, error, agent } = data ?? {};
       if (![session_id, cwd, event].every((v) => typeof v === 'string' && FIELD.test(v))) return reply(res, 400);
       // pid do processo do Claude Code, opcional, para saber quando a sessão morreu
       if (pid !== undefined && !/^[1-9]\d{0,9}$/.test(String(pid))) return reply(res, 400);
       // tipo do erro do StopFailure, opcional: uma palavra, nunca a mensagem
       if (error !== undefined && !(typeof error === 'string' && /^[a-z_]{1,40}$/.test(error))) return reply(res, 400);
-      if (state.event({ session_id, cwd, event, pid: pid && Number(pid), error })) broadcast();
+      if (agent !== undefined && agent !== 'codex') return reply(res, 400);
+      if (state.event({ session_id, cwd, event, pid: pid && Number(pid), error, agent })) broadcast();
       reply(res, 204);
     });
   }
@@ -94,6 +112,7 @@ export function createOffice({
   }
 
   function close() {
+    closed = true;
     timers.forEach(clearInterval);
     for (const res of clients) res.end();
     clients.clear();

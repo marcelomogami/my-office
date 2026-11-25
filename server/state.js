@@ -63,7 +63,10 @@ export function createState({
   saved = [],
 }) {
   const sessions = new Map(); // session_id -> { name, status, since, pid }
-  for (const { id, name, status, since, pid } of saved) sessions.set(id, { name, status, since, pid });
+  for (const { id, name, status, since, pid, agent } of saved) sessions.set(id, { name, status, since, pid, agent });
+  const revisions = new Map();
+  const codexSeen = new Set();
+  const codexMisses = new Map();
   let placed = { skins: new Map(), seats: new Map() };
 
   function arrange() {
@@ -74,8 +77,11 @@ export function createState({
   }
 
   // Aplica um evento; devolve true se a lista mudou.
-  function event({ session_id: id, cwd, event: name, pid, error }) {
+  function event({ session_id: id, cwd, event: name, pid, error, agent }) {
+    revisions.set(id, (revisions.get(id) ?? 0) + 1);
+    codexMisses.delete(id);
     if (name === 'SessionEnd') {
+      codexSeen.delete(id);
       if (!sessions.delete(id)) return false;
       arrange();
       return true;
@@ -83,20 +89,23 @@ export function createState({
     let s = sessions.get(id);
     const isNew = !s;
     if (isNew) {
+      codexSeen.delete(id);
       const taken = new Set([...sessions.values()].map((x) => x.name));
       s = { name: uniqueName(projectName(cwd), taken), status: 'done', since: now(), pid };
       sessions.set(id, s);
       arrange();
     }
     if (pid) s.pid = pid;
+    const agentChanged = agent === 'codex' && s.agent !== agent;
+    if (agentChanged) s.agent = agent;
     const status = name === 'StopFailure' && QUOTA_ERRORS.has(error) ? 'quota' : STATUS_OF[name];
-    if (!status) return isNew;
+    if (!status) return isNew || agentChanged;
     const before = s.status;
     const previousSince = s.since;
     s.status = status;
     s.since = now();
     if (before === 'away') arrange(); // voltou: pega baia de novo
-    return isNew || before !== status || (status !== 'working' && previousSince !== s.since);
+    return isNew || agentChanged || before !== status || (status !== 'working' && previousSince !== s.since);
   }
 
   // "Pronto" há mais de `idleAfterMs` vira ocioso, ocioso há mais de
@@ -134,6 +143,27 @@ export function createState({
     return changed;
   }
 
+  // Só remove sessões Codex que já foram vistas neste servidor e faltaram
+  // duas vezes; um evento durante a consulta invalida a respectiva amostra.
+  function codexCandidates() {
+    return new Map([...sessions].filter(([, s]) => s.agent === 'codex').map(([id]) => [id, revisions.get(id) ?? 0]));
+  }
+  function reconcileCodex(loaded, candidates) {
+    let changed = false;
+    for (const [id, revision] of candidates) {
+      const s = sessions.get(id);
+      if (!s || s.agent !== 'codex' || (revisions.get(id) ?? 0) !== revision) continue;
+      if (loaded.has(id)) { codexSeen.add(id); codexMisses.delete(id); continue; }
+      if (!codexSeen.has(id)) continue;
+      const misses = (codexMisses.get(id) ?? 0) + 1;
+      codexMisses.set(id, misses);
+      if (misses >= 2) { sessions.delete(id); codexSeen.delete(id); codexMisses.delete(id); changed = true; }
+    }
+    if (changed) arrange();
+    return changed;
+  }
+  function codexUnavailable() { codexSeen.clear(); codexMisses.clear(); }
+
   function list() {
     return [...sessions.values()].map(({ name, status, since }) => ({
       name,
@@ -146,7 +176,7 @@ export function createState({
 
   // O que precisa sobreviver a um reinício do backend.
   function snapshot() {
-    return [...sessions].map(([id, { name, status, since, pid }]) => ({ id, name, status, since, pid }));
+    return [...sessions].map(([id, { name, status, since, pid, agent }]) => ({ id, name, status, since, pid, ...(agent ? { agent } : {}) }));
   }
 
   if (sessions.size) {
@@ -154,5 +184,5 @@ export function createState({
     tick();
   }
 
-  return { event, tick, list, snapshot };
+  return { event, tick, list, snapshot, codexCandidates, reconcileCodex, codexUnavailable };
 }

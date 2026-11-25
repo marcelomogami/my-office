@@ -95,3 +95,11 @@ test('StopFailure com tipo de erro vira cota na lista', async () => {
   assert.equal((await post({ session_id: 's4', cwd: '/tmp/cota', event: 'StopFailure', error: 'rate_limit' })).status, 204);
   assert.equal(office.state.list().find((s) => s.name === 'cota').status, 'quota');
 });
+
+test('guarda somente a identificação de agente Codex aceita', async () => {
+  assert.equal((await post({ session_id: 'codex-1', cwd: '/tmp/codex', event: 'Stop', agent: 'codex', prompt: 'segredo' })).status, 204);
+  const saved = JSON.parse(readFileSync(sessionsFile, 'utf8'));
+  assert.equal(saved.find(s => s.id === 'codex-1').agent, 'codex');
+  assert.ok(!readFileSync(sessionsFile, 'utf8').includes('segredo'));
+  assert.equal((await post({ session_id: 'codex-2', cwd: '/tmp/codex', event: 'Stop', agent: 'outro' })).status, 400);
+});

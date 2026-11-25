@@ -241,3 +241,46 @@ test('reinício preserva os prazos de quem possui baia', () => {
   assert.equal(state.list().length, 1);
   assert.equal(state.list()[0].status, 'idle');
 });
+
+test('detecta saída só do Codex confirmado no servidor, após duas ausências', () => {
+  const { state } = setup();
+  state.event({session_id:'codex-a',cwd:'/tmp/codex',event:'Stop',agent:'codex'});
+  state.event({session_id:'claude-a',cwd:'/tmp/claude',event:'Stop'});
+  const snap = () => state.codexCandidates();
+  state.reconcileCodex(new Set(['codex-a']), snap());
+  assert.equal(state.reconcileCodex(new Set(), snap()), false);
+  assert.equal(state.reconcileCodex(new Set(), snap()), true);
+  assert.deepEqual(state.list().map(s => s.name), ['claude']);
+});
+
+test('sessões não observadas no servidor e eventos durante a consulta não são removidos', () => {
+  const { state } = setup();
+  state.event({session_id:'a',cwd:'/tmp/a',event:'Stop',agent:'codex'});
+  state.reconcileCodex(new Set(), state.codexCandidates());
+  state.reconcileCodex(new Set(), state.codexCandidates());
+  assert.equal(state.list().length, 1);
+  state.reconcileCodex(new Set(['a']), state.codexCandidates());
+  state.reconcileCodex(new Set(), state.codexCandidates());
+  const old = state.codexCandidates();
+  state.event({session_id:'a',cwd:'/tmp/a',event:'UserPromptSubmit',agent:'codex'});
+  assert.equal(state.reconcileCodex(new Set(), old), false);
+  assert.equal(state.list().length, 1);
+});
+
+test('indisponibilidade limpa a confirmação de presença antes de retomar consultas', () => {
+  const { state } = setup();
+  state.event({session_id:'a',cwd:'/tmp/a',event:'Stop',agent:'codex'});
+  state.reconcileCodex(new Set(['a']), state.codexCandidates());
+  state.reconcileCodex(new Set(), state.codexCandidates());
+  state.codexUnavailable();
+  state.reconcileCodex(new Set(), state.codexCandidates());
+  state.reconcileCodex(new Set(), state.codexCandidates());
+  assert.equal(state.list().length, 1);
+});
+
+test('identificação de Codex sobrevive ao snapshot', () => {
+  const first = setup();
+  first.state.event({session_id:'a',cwd:'/tmp/a',event:'Stop',agent:'codex'});
+  const again = setup({ saved: first.state.snapshot() });
+  assert.equal(again.state.codexCandidates().has('a'), true);
+});
