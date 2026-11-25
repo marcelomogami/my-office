@@ -7,10 +7,11 @@ import { projectName, uniqueName } from './names.js';
 // na primeira vez que aparece (o nome não muda se a sessão trocar de pasta).
 // A lista sai na ordem em que as sessões apareceram, já com skin e lugar.
 
-export const IDLE_AFTER_MS = 30 * 60 * 1000;
+export const IDLE_AFTER_MS = 10 * 60 * 1000;
 // Sem atividade por tanto tempo, o personagem vai embora: sai da sala e
-// libera a baia, mas a sessão continua no quadro lateral até voltar a agir.
+// libera a baia; após oito horas sem atividade, sai também da lista.
 export const AWAY_AFTER_MS = 4 * 60 * 60 * 1000;
+export const REMOVE_AFTER_MS = 8 * 60 * 60 * 1000;
 
 // Evento do Claude Code -> status. Eventos fora da lista (Notification,
 // SubagentStop...) são ignorados: o Notification de "esperando você" chega
@@ -55,6 +56,7 @@ export function createState({
   now = Date.now,
   idleAfterMs = IDLE_AFTER_MS,
   awayAfterMs = AWAY_AFTER_MS,
+  removeAfterMs = REMOVE_AFTER_MS,
   alive = isAlive,
   saved = [],
 }) {
@@ -114,6 +116,10 @@ export function createState({
       }
       if (CAN_LEAVE.has(s.status) && quiet >= awayAfterMs) {
         s.status = 'away';
+        changed = true;
+      }
+      if (s.status === 'away' && quiet >= removeAfterMs) {
+        sessions.delete(id);
         changed = true;
       }
     }

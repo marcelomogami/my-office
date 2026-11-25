@@ -5,8 +5,9 @@
 //   Stop (terminou e respondeu, ou parou com uma pergunta)  -> done
 //   StopFailure (turno interrompido por erro da API)        -> error
 //   StopFailure com rate_limit ou billing_error             -> quota
-//   muito tempo em "done" sem novo pedido (30 min)         -> idle
+//   muito tempo em "done" sem novo pedido (10 min)         -> idle
 //   4 horas sem nenhum evento                               -> away
+//   8 horas sem nenhum evento                               -> removido da lista
 //
 // `icon` é o ícone da folha desenhado dentro do balão (uma lista vira
 // animação, um quadro a cada 400 ms); `emoji` é só o ícone usado no quadro

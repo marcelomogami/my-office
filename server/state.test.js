@@ -201,3 +201,25 @@ test('expõe início da parada, preserva na copa e atualiza após novo término'
   assert.equal(ev('a', 'Stop'), true);
   assert.equal(state.list()[0].since, 1110);
 });
+
+test('descansa após 10 minutos e desaparece da lista após 8 horas sem atividade', () => {
+  let t = 0;
+  const state = createState({ seatOrder: ORDER, memory: { skins: new Map(), seats: new Map() }, now: () => t });
+  const event = (name) => state.event({ session_id: 'a', cwd: `${P}/personal/a`, event: name });
+  event('Stop');
+  t = 10 * 60_000 - 1; state.tick(); assert.equal(state.list()[0].status, 'done');
+  t++; state.tick(); assert.equal(state.list()[0].status, 'idle');
+  t = 4 * 3600_000; state.tick(); assert.equal(state.list()[0].status, 'away');
+  t = 8 * 3600_000 - 1; state.tick(); assert.equal(state.list().length, 1);
+  t++; state.tick(); assert.deepEqual(state.list(), []);
+  event('UserPromptSubmit'); assert.equal(state.list()[0].status, 'working');
+});
+
+test('atividade durante a ausência reinicia o prazo de remoção', () => {
+  let t = 0;
+  const state = createState({ seatOrder: ORDER, memory: { skins: new Map(), seats: new Map() }, now: () => t });
+  const event = (name) => state.event({ session_id: 'a', cwd: `${P}/personal/a`, event: name });
+  event('Stop'); t = 7 * 3600_000; state.tick(); assert.equal(state.list()[0].status, 'away');
+  event('UserPromptSubmit'); event('Stop');
+  t = 8 * 3600_000; state.tick(); assert.equal(state.list().length, 1);
+});

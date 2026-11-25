@@ -9,7 +9,7 @@ import { createOffice } from './app.js';
 // systemd (ativação por socket), usa o socket que ele já abriu; com
 // MY_OFFICE_IDLE_EXIT_MIN, encerra sozinho depois desse tempo sem sessões e
 // sem página conectada, e o systemd volta a iniciá-lo na próxima conexão.
-// MY_OFFICE_IDLE_MIN e MY_OFFICE_AWAY_MIN mudam os prazos de "ocioso" (30) e
+// MY_OFFICE_IDLE_MIN e MY_OFFICE_AWAY_MIN mudam os prazos de "ocioso" (10) e
 // "foi embora" (240), em minutos; servem para testes.
 
 const HOST = process.env.MY_OFFICE_HOST || '127.0.0.1';
