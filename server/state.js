@@ -12,6 +12,7 @@ export const IDLE_AFTER_MS = 10 * 60 * 1000;
 // libera a baia; após oito horas sem atividade, sai também da lista.
 export const AWAY_AFTER_MS = 4 * 60 * 60 * 1000;
 export const REMOVE_AFTER_MS = 8 * 60 * 60 * 1000;
+export const HOME_OFFICE_REMOVE_AFTER_MS = 60 * 60 * 1000;
 
 // Evento do Claude Code -> status. Eventos fora da lista (Notification,
 // SubagentStop...) são ignorados: o Notification de "esperando você" chega
@@ -57,6 +58,7 @@ export function createState({
   idleAfterMs = IDLE_AFTER_MS,
   awayAfterMs = AWAY_AFTER_MS,
   removeAfterMs = REMOVE_AFTER_MS,
+  homeOfficeRemoveAfterMs = HOME_OFFICE_REMOVE_AFTER_MS,
   alive = isAlive,
   saved = [],
 }) {
@@ -114,6 +116,11 @@ export function createState({
         s.status = 'idle';
         changed = true;
       }
+      if (s.status !== 'working' && s.status !== 'away' && !placed.seats.has(s.name) && quiet >= homeOfficeRemoveAfterMs) {
+        sessions.delete(id);
+        changed = true;
+        continue;
+      }
       if (CAN_LEAVE.has(s.status) && quiet >= awayAfterMs) {
         s.status = 'away';
         changed = true;
@@ -143,8 +150,8 @@ export function createState({
   }
 
   if (sessions.size) {
-    tick();
     arrange();
+    tick();
   }
 
   return { event, tick, list, snapshot };

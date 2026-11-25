@@ -223,3 +223,21 @@ test('atividade durante a ausência reinicia o prazo de remoção', () => {
   event('UserPromptSubmit'); event('Stop');
   t = 8 * 3600_000; state.tick(); assert.equal(state.list().length, 1);
 });
+
+test('home office some depois de uma hora sem atividade e volta no próximo evento', () => {
+  let t = 0;
+  const state = createState({ seatOrder: [], memory: { skins: new Map(), seats: new Map() }, now: () => t });
+  const event = (name) => state.event({ session_id: 'a', cwd: `${P}/personal/a`, event: name });
+  event('Stop'); t = 3_600_000 - 1; state.tick(); assert.equal(state.list().length, 1);
+  t++; state.tick(); assert.equal(state.list().length, 0);
+  event('UserPromptSubmit'); assert.equal(state.list()[0].status, 'working');
+  t += 4_000_000; state.tick(); assert.equal(state.list()[0].status, 'working');
+});
+
+test('reinício preserva os prazos de quem possui baia', () => {
+  const now = 3_600_000;
+  const saved = [{ id: 'a', name: 'a', status: 'idle', since: 0 }];
+  const state = createState({ seatOrder: ORDER, memory: { skins: new Map(), seats: new Map() }, now: () => now, saved });
+  assert.equal(state.list().length, 1);
+  assert.equal(state.list()[0].status, 'idle');
+});

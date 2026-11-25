@@ -1,4 +1,4 @@
-import { elapsedLabel } from './elapsed.js';
+import { panelDetails, panelFace } from './panel.js';
 import { Application, Assets, Container, Graphics, Rectangle, Sprite, Texture } from 'pixi.js';
 import './style.css';
 import sheetUrl from '../assets/pixel-office-2dpig/PixelOfficeAssetsNew2.png';
@@ -281,6 +281,7 @@ function face(skin) {
 }
 
 const panel = document.querySelector('#sessions');
+const homeFaces = new Map();
 function statusText(status) {
   const st = STATUS[status];
   return `${st.emoji} ${st.label}`;
@@ -302,11 +303,11 @@ document.querySelector('#manager')?.replaceChildren(card(MANAGER.skin, MANAGER.n
 function renderPanel() {
   panel.replaceChildren(
     ...sessions.map(({ name, status, since }) => {
-      const skin = seatOf.has(name) && skinOf.get(name);
-      const shortLabel = { done: '👍 pronto', idle: '☕ descansando' };
-      const text = skin || status === 'away' ? (shortLabel[status] ?? statusText(status)) : 'sem lugar na sala';
-      const elapsed = ['done', 'idle', 'error', 'quota'].includes(status) ? elapsedLabel(since) : '';
-      return card(skin, name, elapsed ? `${text} · ${elapsed}` : text);
+      const seated = seatOf.has(name);
+      const homeOffice = !seated && status !== 'away';
+      const skin = homeOffice ? panelFace(name, skinOf.get(name), homeFaces) : seated && skinOf.get(name);
+      const { title, text } = panelDetails(name, status, seated, since);
+      return card(skin, title, text);
     }),
   );
 }
