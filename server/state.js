@@ -88,10 +88,11 @@ export function createState({
     const status = name === 'StopFailure' && QUOTA_ERRORS.has(error) ? 'quota' : STATUS_OF[name];
     if (!status) return isNew;
     const before = s.status;
+    const previousSince = s.since;
     s.status = status;
     s.since = now();
     if (before === 'away') arrange(); // voltou: pega baia de novo
-    return isNew || before !== status;
+    return isNew || before !== status || (status !== 'working' && previousSince !== s.since);
   }
 
   // "Pronto" há mais de `idleAfterMs` vira ocioso, ocioso há mais de
@@ -121,9 +122,10 @@ export function createState({
   }
 
   function list() {
-    return [...sessions.values()].map(({ name, status }) => ({
+    return [...sessions.values()].map(({ name, status, since }) => ({
       name,
       status,
+      since,
       skin: placed.skins.get(name) ?? null,
       seat: placed.seats.get(name) ?? null,
     }));

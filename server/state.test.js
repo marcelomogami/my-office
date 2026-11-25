@@ -126,7 +126,7 @@ test('snapshot volta num estado novo, já sem as sessões mortas', () => {
   first.state.event({ session_id: 'b', cwd: `${P}/personal/b`, event: 'UserPromptSubmit', pid: 222 });
   const saved = first.state.snapshot();
   const again = setup({ saved, dead: new Set([222]) });
-  assert.deepEqual(again.state.list(), [{ name: '~secretario', status: 'done', skin: 's6', seat: 'F' }]);
+  assert.deepEqual(again.state.list(), [{ name: '~secretario', status: 'done', since: 0, skin: 's6', seat: 'F' }]);
   again.advance(1000);
   again.state.tick();
   assert.equal(again.state.list()[0].status, 'idle');
@@ -146,7 +146,7 @@ test('4 horas (aqui, 5 s) sem evento: vai embora, libera a baia e volta ao agir'
   ev('b', 'UserPromptSubmit', `${P}/personal/outro`); // b continua ativo
   assert.equal(state.tick(), true);
   const [a, b] = state.list();
-  assert.deepEqual(a, { name: 'my-office', status: 'away', skin: null, seat: null });
+  assert.deepEqual(a, { name: 'my-office', status: 'away', since: 0, skin: null, seat: null });
   assert.equal(b.status, 'working');
   assert.equal(ev('a', 'UserPromptSubmit'), true);
   const back = state.list()[0];
@@ -186,4 +186,18 @@ test('falha do modelo mostra erro e nova tentativa retoma trabalho', () => {
   assert.equal(state.list()[0].status, 'working');
   ev('a', 'Stop');
   assert.equal(state.list()[0].status, 'done');
+});
+
+test('expõe início da parada, preserva na copa e atualiza após novo término', () => {
+  const { state, ev, advance } = setup();
+  advance(100);
+  ev('a', 'Stop');
+  assert.equal(state.list()[0].since, 100);
+  advance(1000); state.tick();
+  assert.equal(state.list()[0].since, 100);
+  ev('a', 'Stop');
+  assert.equal(state.list()[0].since, 1100);
+  advance(10);
+  assert.equal(ev('a', 'Stop'), true);
+  assert.equal(state.list()[0].since, 1110);
 });

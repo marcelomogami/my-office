@@ -1,3 +1,4 @@
+import { elapsedLabel } from './elapsed.js';
 import { Application, Assets, Container, Graphics, Rectangle, Sprite, Texture } from 'pixi.js';
 import './style.css';
 import sheetUrl from '../assets/pixel-office-2dpig/PixelOfficeAssetsNew2.png';
@@ -245,7 +246,7 @@ function render() {
 }
 
 function setSessions(list) {
-  sessions = list.map(({ name, status, skin, seat }) => ({ name, status, skin, seat }));
+  sessions = list.map(({ name, status, skin, seat, since }) => ({ name, status, skin, seat, since }));
   render();
 }
 
@@ -300,15 +301,20 @@ document.querySelector('#manager')?.replaceChildren(card(MANAGER.skin, MANAGER.n
 
 function renderPanel() {
   panel.replaceChildren(
-    ...sessions.map(({ name, status }) => {
+    ...sessions.map(({ name, status, since }) => {
       const skin = seatOf.has(name) && skinOf.get(name);
-      const text = skin || status === 'away' ? statusText(status) : 'sem lugar na sala';
-      return card(skin, name, text);
+      const shortLabel = { done: '👍 pronto', idle: '☕ parado' };
+      const text = skin || status === 'away' ? (shortLabel[status] ?? statusText(status)) : 'sem lugar na sala';
+      const elapsed = ['done', 'idle', 'error', 'quota'].includes(status) ? elapsedLabel(since) : '';
+      return card(skin, name, elapsed ? `${text} · ${elapsed}` : text);
     }),
   );
 }
 
 // ---------------------------------------------------------------- tooltip
+// Atualiza o tempo sem reconstruir a cena Pixi.
+setInterval(renderPanel, 10000);
+
 // Passando o mouse num personagem (sentado ou na copa), mostra a sessão.
 const tooltip = document.querySelector('#tooltip');
 function spriteRect(sprite) {
