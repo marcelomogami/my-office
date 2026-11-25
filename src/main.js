@@ -138,10 +138,10 @@ function seatIn(person, id, seatId) {
 
 // Ociosos: os 3 primeiros ficam em pé na copa, ao lado da cafeteira (centro
 // de cada lugar e se o personagem fica espelhado; a linha do pé é comum). O
-// 4º e o 5º sentam na mesa de reunião do outro lado. Com tudo cheio, quem
+// 4º e o 5º sentam na mesa de reunião; o 6º senta no sofá com o gato. Com tudo cheio, quem
 // mais ficar ocioso continua sentado na própria baia, sem balão.
 const COPA_FEET = 126;
-const COPA_SPOTS = [{ x: 18 }, { x: 38 }, { x: 64, flip: true }];
+const COPA_SPOTS = [{ x: 15 }, { x: 33 }, { x: 52, flip: true }];
 const MEETING = Object.keys(scene.meeting);
 const idleTaken = new Set();
 
