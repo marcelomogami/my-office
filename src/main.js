@@ -141,7 +141,7 @@ function seatIn(person, id, seatId) {
 // 4º e o 5º sentam na mesa de reunião; o 6º senta no sofá com o gato. Com tudo cheio, quem
 // mais ficar ocioso continua sentado na própria baia, sem balão.
 const COPA_FEET = 126;
-const COPA_SPOTS = [{ x: 15 }, { x: 33 }, { x: 52, flip: true }];
+const COPA_SPOTS = [{ x: 15 }, { x: 33 }, { x: 64, flip: true }];
 const MEETING = Object.keys(scene.meeting);
 const idleTaken = new Set();
 
