@@ -303,7 +303,7 @@ function renderPanel() {
   panel.replaceChildren(
     ...sessions.map(({ name, status, since }) => {
       const skin = seatOf.has(name) && skinOf.get(name);
-      const shortLabel = { done: '👍 pronto', idle: '☕ parado' };
+      const shortLabel = { done: '👍 pronto', idle: '☕ descansando' };
       const text = skin || status === 'away' ? (shortLabel[status] ?? statusText(status)) : 'sem lugar na sala';
       const elapsed = ['done', 'idle', 'error', 'quota'].includes(status) ? elapsedLabel(since) : '';
       return card(skin, name, elapsed ? `${text} · ${elapsed}` : text);
