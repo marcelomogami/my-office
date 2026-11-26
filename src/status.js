@@ -5,7 +5,7 @@
 //   Stop (terminou e respondeu, ou parou com uma pergunta)  -> done
 //   StopFailure (turno interrompido por erro da API)        -> error
 //   StopFailure com rate_limit ou billing_error             -> quota
-//   muito tempo em "done" sem novo pedido (10 min)         -> idle
+//   10 min em "done" ou "error" sem novo evento             -> idle
 //   4 horas sem nenhum evento                               -> away
 //   8 horas sem nenhum evento                               -> removido da lista
 //

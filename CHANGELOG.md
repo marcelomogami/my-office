@@ -4,6 +4,7 @@ Notable changes are grouped by published version. Complete release notes are als
 
 ## Unreleased
 
+- Sessions with an error move to a rest area after 10 minutes without activity, like finished sessions, instead of keeping the error bubble for up to 4 hours.
 - Runs backend tests, dock tests and the web build on GitHub Actions for every push and pull request.
 
 ## [0.7.1](https://github.com/marcelomogami/my-office/releases/tag/v0.7.1)

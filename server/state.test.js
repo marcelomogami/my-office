@@ -164,7 +164,7 @@ test('StopFailure: cota para rate_limit e billing_error, erro para o resto', () 
   assert.deepEqual(state.list().map((s) => s.status), ['quota', 'quota', 'error', 'error']);
 });
 
-test('erro e cota não vão para o café, mas vão embora depois de 4 horas', () => {
+test('cota não vai para o café, mas vai embora depois de 4 horas', () => {
   const { state, ev, advance } = setup();
   state.event({ session_id: 'a', cwd: `${P}/personal/a`, event: 'StopFailure', error: 'rate_limit' });
   advance(1000);
@@ -283,4 +283,17 @@ test('identificação de Codex sobrevive ao snapshot', () => {
   first.state.event({session_id:'a',cwd:'/tmp/a',event:'Stop',agent:'codex'});
   const again = setup({ saved: first.state.snapshot() });
   assert.equal(again.state.codexCandidates().has('a'), true);
+});
+
+test('erro vai descansar depois do mesmo prazo do pronto', () => {
+  const { state, ev, advance } = setup();
+  ev('a', 'CodexModelFailed');
+  advance(999);
+  assert.equal(state.tick(), false);
+  assert.equal(state.list()[0].status, 'error');
+  advance(1);
+  assert.equal(state.tick(), true);
+  assert.equal(state.list()[0].status, 'idle');
+  ev('a', 'CodexModelStarted');
+  assert.equal(state.list()[0].status, 'working');
 });
