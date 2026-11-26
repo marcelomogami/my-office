@@ -46,7 +46,7 @@ Não inclua uma ação de fechamento automático da aba atual se o atalho puder 
 
 O backend determina os status e envia o personagem, a baia e o rosto da lista de cada sessão, incluindo os [projetos fixos](../README.pt-BR.md#projetos-fixos). O dock usa a mesma numeração de baias da página web, da 1, ao lado do Boss, à 6, na ponta esquerda. O Boss aparece sempre na baia individual. Sessões sem baia no backend ou com status `away` não são desenhadas na sala.
 
-Quando uma sessão entra em `idle`, o dock escolhe aleatoriamente um dos seis lugares livres de descanso e mantém esse lugar até a sessão sair desse estado. No próximo descanso há novo sorteio. Os balões representam `working`, `done`, `error` e `quota`.
+Quando uma sessão entra em `idle`, o dock escolhe aleatoriamente um dos oito lugares livres de descanso (dois em pé e duas cadeiras junto à copa, e dois em cada sofá) e mantém esse lugar até a sessão sair desse estado. No próximo descanso há novo sorteio. Os balões representam `working`, `done`, `error` e `quota`.
 
 O prazo normal para entrar em descanso pertence ao backend, atualmente dez minutos. Para uma demonstração temporária somente no dock, adicione `--test-idle-seconds 10` ao comando do renderizador. A opção antecipa visualmente o descanso de sessões `done`, sem alterar o backend nem o escritório 1. Não a use no atalho normal.
 

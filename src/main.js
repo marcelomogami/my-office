@@ -114,7 +114,7 @@ const MANAGER = { skin: BOSS, name: 'Boss', status: 'stress', bubbleX: 191, bubb
 let managerSprite = null;
 const SEAT_ORDER = scene.seatOrder; // a fileira de cima está fora de uso por enquanto
 const slots = new Map(); // lugar -> Container
-const meetSlots = new Map(); // cadeira da mesa de reunião -> Container
+const restSlots = new Map(); // lugar de descanso sentado -> Container
 const cups = new Map(); // lugar -> xícara
 const copa = new Container();
 const makeSprite = (name, x, y, flip) => {
@@ -125,10 +125,10 @@ const makeSprite = (name, x, y, flip) => {
 };
 for (const [name, x, y, flip] of scene.items) {
   if (name === 'partition' && !copa.parent) world.addChild(copa);
-  if (name.startsWith('seat:') || name.startsWith('meet:')) {
+  if (name.startsWith('seat:') || name.startsWith('rest:')) {
     const slot = new Container();
     world.addChild(slot);
-    (name.startsWith('seat:') ? slots : meetSlots).set(name.slice(5), slot);
+    (name.startsWith('seat:') ? slots : restSlots).set(name.slice(5), slot);
     continue;
   }
   if (name.startsWith('cup:')) {
@@ -175,36 +175,33 @@ function seatIn(person, id, seatId) {
   person.anchor = { ...sitOn(person, id, scene.seats[seatId], slots.get(seatId)), bx: scene.seats[seatId].bubbleX };
 }
 
-// Ociosos: os 3 primeiros ficam em pé na copa, ao lado da cafeteira (centro
-// de cada lugar e se o personagem fica espelhado; a linha do pé é comum). O
-// 4º e o 5º sentam na mesa de reunião; o 6º senta no sofá com o gato. Com tudo cheio, quem
-// mais ficar ocioso continua sentado na própria baia, sem balão.
-const COPA_FEET = 126;
-const COPA_SPOTS = [{ x: 15 }, { x: 33 }, { x: 64, flip: true }];
-const MEETING = Object.keys(scene.meeting);
+// Ociosos: cada um ganha um lugar de descanso livre sorteado (scene.rest),
+// em pé na copa ou sentado no sofá e na mesa de reunião, e fica nele até
+// sair do descanso. Com tudo cheio, quem mais ficar ocioso continua sentado
+// na própria baia, sem balão.
+const REST = Object.entries(scene.rest);
 const idleTaken = new Set();
 
 function goIdle(person, id) {
   if (person.idle) return true;
-  const copaSpot = COPA_SPOTS.find((c) => !idleTaken.has(c));
-  if (copaSpot) {
+  const free = REST.filter(([spot]) => !idleTaken.has(spot));
+  if (!free.length) return false;
+  const [spot, place] = free[Math.floor(Math.random() * free.length)];
+  if (place.stand) {
     const { standing } = person;
     const w = standing.texture.width / U;
     const h = standing.texture.height / U;
-    const left = Math.round(copaSpot.x - w / 2);
-    standing.scale.x = copaSpot.flip ? -1 / U : 1 / U;
-    standing.position.set(copaSpot.flip ? left + w : left, COPA_FEET - h);
+    const left = Math.round(place.stand[0] - w / 2);
+    standing.scale.x = place.flip ? -1 / U : 1 / U;
+    standing.position.set(place.flip ? left + w : left, place.stand[1] - h);
     standing.visible = true;
     person.seated.visible = false;
-    person.idle = copaSpot;
   } else {
-    const chairId = MEETING.find((c) => !idleTaken.has(c));
-    if (!chairId) return false; // copa e mesa cheias
-    sitOn(person, id, scene.meeting[chairId], meetSlots.get(chairId));
+    sitOn(person, id, place, restSlots.get(spot));
     person.seated.visible = true;
-    person.idle = chairId;
   }
-  idleTaken.add(person.idle);
+  person.idle = spot;
+  idleTaken.add(spot);
   return true;
 }
 

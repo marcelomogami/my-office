@@ -56,7 +56,7 @@ def sprite(name, flip=False):
 def compose(items):
     im = background(256, 224)
     for it in items:
-        if it[0].startswith(("seat:", "cup:", "meet:")):  # personagem e xícara entram pela página
+        if it[0].startswith(("seat:", "cup:", "rest:")):  # personagem e xícara entram pela página
             continue
         im.alpha_composite(sprite(it[0], len(it) > 3 and it[3]), (it[1], it[2]))
     return im

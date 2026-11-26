@@ -28,10 +28,18 @@ class OfficeTest(unittest.TestCase):
         resting = [session('a', 'char1', 'idle', '6'), session('b', 'char2', 'idle', '5')]
         seats = layout(resting)
         positions = rest_layout(resting, seats, rng=LastChoice())
-        self.assertEqual(positions, {'a': 5, 'b': 4})
+        self.assertEqual(positions, {'a': 7, 'b': 6})
         self.assertEqual(rest_layout(list(reversed(resting)), seats, positions), positions)
         active = [session('a', 'char1'), resting[1]]
-        self.assertEqual(rest_layout(active, seats, positions), {'b': 4})
+        self.assertEqual(rest_layout(active, seats, positions), {'b': 6})
+
+    def test_eight_rest_spots_all_drawn(self):
+        from office import REST
+        self.assertEqual(len(REST), 8)
+        resting = [session(str(i), 'char1', 'idle', str(i % 6 + 1)) for i in range(8)]
+        everyone = render(resting, {}, rest_seats={str(i): i for i in range(8)})
+        nobody = render(resting, {}, rest_seats={})
+        self.assertNotEqual(everyone.tobytes(), nobody.tobytes())
 
     def test_panel_shows_timer_and_preserves_home_office_done(self):
         s = session('a', 'char1', 'idle')
