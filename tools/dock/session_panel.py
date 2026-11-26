@@ -13,7 +13,7 @@ PANEL_WIDTH, PANEL_HEIGHT = 1514, 148
 # Mesmas sessões fixas de src/sessions.js (a #5 leva isso para um arquivo de
 # configuração). Personagem fora do catálogo é ignorado.
 FIXED_FACES = {'~detran': 'custom2', '~secretario': 'custom1', '~secretario-dev': 'char5', 'chat-ferramentas': 'char1'}
-# Rostos sorteados nunca usam o personagem de uma sessão fixa.
+# Rostos sorteados só usam o personagem de uma sessão fixa se todos forem fixos.
 DRAWABLE = tuple(c for c in CAST if c not in FIXED_FACES.values()) or CAST
 LABELS = {'working': 'trabalhando', 'done': 'pronto', 'idle': 'descansando',
           'away': 'foi embora', 'error': 'erro', 'quota': 'cota acabou'}
