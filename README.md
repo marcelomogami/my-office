@@ -44,3 +44,17 @@ Cada sessão aberta vira um personagem numa baia. As sessões fixas (`~detran`, 
 O balão mostra o status: trabalhando (pontinhos animados), pronto (joinha), erro (exclamação vermelha, pulando) ou cota acabou (bateria vazia). Os balões são sempre brancos. Quando a sessão fica 30 minutos pronta sem nova tarefa (`idle`), o personagem levanta e vai para a copa (até 3) ou para a mesa de reunião (mais 2). Depois de 4 horas sem atividade, vai embora: sai da sala, libera a baia e fica só no quadro lateral até a sessão voltar a agir. Os status e o evento de origem de cada um ficam em `src/status.js`; o desenho do balão, em `src/bubbles.js`.
 
 Com `?demo` na URL, a página mostra uma demonstração fixa, sem backend; com `?demo&ciclo`, os status giram. No console do navegador, `office.update('paracetacaro', 'working')` abre ou atualiza uma sessão e `office.close('my-office')` fecha uma.
+
+## Escritório no Kitty
+
+O escritório 2 pode ser desenhado em um dock inferior do Kitty, sem abrir a página do escritório original. O renderizador usa Python 3 e Pillow e acompanha o backend local existente pela rota `/api/stream`. O Kitty precisa oferecer `os-window-dock` e o protocolo gráfico; o teste foi feito no Kitty 0.51.0.
+
+A partir de uma ação do Kitty, o dock pode ser iniciado com:
+
+```text
+launch --type=os-window-dock --dock-edge=bottom --dock-size=9 --dock-skip-focus python3 /caminho/para/my-office/tools/dock/office.py
+```
+
+Ajuste o caminho para o projeto e a altura de nove linhas para a fonte e a janela usadas. O programa usa o backend em `http://127.0.0.1:5199/api/stream`; para testar outro backend, passe `--url` com o endereço do stream. A prévia do layout está em `dock-preview.html` no servidor de desenvolvimento.
+
+Para verificar o renderizador sem Kitty, execute `python3 -m unittest discover -s tools/dock -p 'test_*.py'`. A lista lateral de sessões do escritório 2 ainda não foi implementada.
