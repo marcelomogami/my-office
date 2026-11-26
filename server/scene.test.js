@@ -10,6 +10,6 @@ test('sofá tem o sexto lugar de descanso, virado para o gato', () => {
   const cat = scene.items.findIndex(([name]) => name === 'cat');
   const slot = scene.items.findIndex(([name]) => name === 'meet:S');
   assert.ok(sofa >= 0 && sofa < cat && cat < slot);
-  assert.equal(scene.items[cat][1], 70);
+  assert.equal(scene.items[cat][1], 56); // célula do gato; o desenho fica em x = 70, no sofá
   assert.equal(scene.items.filter(([name]) => name === 'dog').length, 1);
 });

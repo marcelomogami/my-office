@@ -41,10 +41,15 @@ def small(path):
     big = Image.open(ROOT / path).convert("RGBA")
     return big.resize((big.width // 5, big.height // 5), Image.NEAREST)
 
-SHEET = small("assets/pixel-office-2dpig/PixelOfficeAssetsNew2.png")
+SHEET = small("assets/pixel-office-2dpig/PixelOfficeAssetsNew2.png")  # personagens, até a #6
+OFFICE = json.loads((ROOT / "assets/office/default.json").read_text())["items"]
+OFFICE_SHEET = Image.open(ROOT / "assets/office/default.png").convert("RGBA")
 
 def sprite(name, flip=False):
-    fx, fy, fw, fh = FRAMES[name]; src = SHEET
+    if name in OFFICE:
+        fx, fy, fw, fh = OFFICE[name]; src = OFFICE_SHEET
+    else:
+        fx, fy, fw, fh = FRAMES[name]; src = SHEET
     spr = src.crop((fx, fy, fx + fw, fy + fh))
     return spr.transpose(Image.FLIP_LEFT_RIGHT) if flip else spr
 

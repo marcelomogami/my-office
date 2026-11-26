@@ -22,5 +22,5 @@ export const STATUS = {
   idle: { label: 'sem tarefa há um tempo', emoji: '☕' },
   away: { label: 'foi embora', emoji: '🏠' },
   // Só do gerente (mesa de chefe), não vem de sessão.
-  stress: { label: 'stress...', emoji: '💢', icon: 'iconStress' },
+  stress: { label: 'stress...', emoji: '💢', icon: 'iconAnger' },
 };

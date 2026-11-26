@@ -2,6 +2,10 @@ import { panelDetails, panelFace } from './panel.js';
 import { Application, Assets, Container, Graphics, Rectangle, Sprite, Texture } from 'pixi.js';
 import './style.css';
 import sheetUrl from '../assets/pixel-office-2dpig/PixelOfficeAssetsNew2.png';
+import officeUrl from '../assets/office/default.png';
+import officeMap from '../assets/office/default.json';
+import uiUrl from '../assets/ui/default.png';
+import uiMap from '../assets/ui/default.json';
 import frames from './frames.json';
 import background from './background.json';
 import scene from './scene.json';
@@ -11,8 +15,10 @@ import { layout, loadRemembered, saveRemembered, SKINS } from './sessions.js';
 
 // Cena baseada no exemplo do 2dPig, sem o céu. A disposição está em
 // scene.json (dá para conferir com tools/compose_scene.py); este
-// arquivo só desenha. Coordenadas em pixels lógicos 1x; as texturas são as
-// versões "Big" (5x), então cada pixel lógico vira U x U na tela.
+// arquivo só desenha. Coordenadas em pixels lógicos 1x; cada pixel lógico vira
+// U x U na tela. Móveis vêm de assets/office e balões e ícones de assets/ui,
+// folhas 1x mapeadas por célula; os personagens ainda vêm da folha antiga,
+// ampliada 5x (até a #6).
 const U = 5;
 const { crop } = scene;
 
@@ -25,6 +31,28 @@ document.querySelector('#office').appendChild(app.canvas);
 
 const sheet = await Assets.load(sheetUrl);
 sheet.source.scaleMode = 'nearest';
+
+// Folhas 1x ampliadas U vezes ao carregar, para todas as texturas terem a
+// mesma escala da folha antiga.
+async function loadSheet(url) {
+  const img = new Image();
+  img.src = url;
+  await img.decode();
+  const canvas = document.createElement('canvas');
+  canvas.width = img.width * U;
+  canvas.height = img.height * U;
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  const source = Texture.from(canvas).source;
+  source.scaleMode = 'nearest';
+  return source;
+}
+const SHEETS = [
+  { map: officeMap.items, source: await loadSheet(officeUrl) },
+  { map: uiMap.items, source: await loadSheet(uiUrl) },
+  { map: frames, source: sheet.source },
+];
 
 const world = new Container();
 world.scale.set(U);
@@ -57,15 +85,17 @@ for (let y0 = f.y, k = 0; y0 < H; y0 += f.band, k++) {
 const cache = new Map();
 const texture = (name) => {
   if (cache.has(name)) return cache.get(name);
-  const [x, y, w, h] = frames[name];
-  const tex = new Texture({ source: sheet.source, frame: new Rectangle(x * U, y * U, w * U, h * U) });
+  const { map, source } = SHEETS.find((sh) => name in sh.map) ?? {};
+  if (!map) throw new Error(`sprite sem mapa: ${name}`);
+  const [x, y, w, h] = map[name];
+  const tex = new Texture({ source, frame: new Rectangle(x * U, y * U, w * U, h * U) });
   cache.set(name, tex);
   return tex;
 };
 
 // Lugares (baias com cadeira). Na lista da cena, cada "seat:X" marca em que
 // ponto da ordem de desenho entra quem senta no lugar X: depois da cadeira e
-// da mesa, antes do teclado e do monitor.
+// da mesa, antes do computador.
 // A copa fica numa camada logo antes das divisórias: quem está lá aparece na
 // frente da cafeteira e do sofá, mas atrás das baias.
 // Gerente: Boss na mesa de chefe, só decoração. Aparece no quadro lateral

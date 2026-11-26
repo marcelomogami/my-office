@@ -1,13 +1,14 @@
 import { Container, Sprite } from 'pixi.js';
 import { STATUS } from './status.js';
 
-// Balão de pensamento de cada personagem: o balão vazio da folha (13x18, com
-// as bolinhas descendo) e, por cima, o ícone do status (11x9, encaixado 1
-// pixel para dentro da borda). Ícone novo é só desenhar na fileira de ícones.
+// Balão de pensamento de cada personagem: o balão vazio da folha de interface
+// (célula 13x17, com as bolinhas descendo) e, por cima, o ícone do status
+// (célula 9x9, com 1 pixel de folga dentro da borda). Ícone novo é só desenhar
+// na fileira de ícones de assets/ui e mapear em default.json.
 
 const BW = 13;
-const BHEIGHT = 18;
-const ICON_OFFSET = 1;
+const BHEIGHT = 17;
+const ICON_OFFSET = [2, 1];
 
 // Canto superior esquerdo do balão. Com `bx` (lugar com corredor definido),
 // o balão vai para o corredor, na altura da cabeça, para não cobrir quem está
@@ -23,7 +24,7 @@ export function createBubbles({ world, texture, U, ticker }) {
 
   function make() {
     const box = new Container();
-    const balloon = new Sprite(texture('bubble'));
+    const balloon = new Sprite(texture('bubbleThought'));
     const icon = new Sprite();
     balloon.scale.set(1 / U);
     icon.scale.set(1 / U);
@@ -46,7 +47,7 @@ export function createBubbles({ world, texture, U, ticker }) {
     const flip = bx + BW / 2 > x + w / 2;
     b.balloon.scale.x = flip ? -1 / U : 1 / U;
     b.balloon.position.set(flip ? bx + BW : bx, y);
-    b.icon.position.set(bx + ICON_OFFSET, y + ICON_OFFSET);
+    b.icon.position.set(bx + ICON_OFFSET[0], y + ICON_OFFSET[1]);
   }
 
   let t = 0;
