@@ -46,7 +46,7 @@ Do not automatically close the active tab in a shortcut that may be repeated fro
 
 The backend determines statuses and sends each session's character, desk and list face, including the [fixed projects](../README.md#fixed-projects). The dock uses the same desk numbers as the web page, from 1 next to the Boss to 6 at the left end. The Boss always appears at the individual workstation. Sessions without a backend workstation or with `away` status are not drawn in the room.
 
-When a session becomes `idle`, the dock randomly selects one of the six free rest positions and keeps it until the session leaves that state. The next rest gets a new selection. Bubbles represent `working`, `done`, `error`, and `quota`.
+When a session becomes `idle`, the dock randomly selects one of the eight free rest positions (two standing and two chairs by the coffee table, and two on each sofa) and keeps it until the session leaves that state. The next rest gets a new selection. Bubbles represent `working`, `done`, `error`, and `quota`.
 
 The normal delay before rest belongs to the backend and is currently ten minutes. For a temporary dock-only demonstration, add `--test-idle-seconds 10` to the renderer command. This visually advances the rest of `done` sessions without changing the backend or Office 1. Do not use it in the normal shortcut.
 

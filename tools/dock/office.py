@@ -20,6 +20,12 @@ from sheets import BOSS, FACES, crop, frame, seated_at
 
 WIDTH, HEIGHT, SCALE = 478, 72, 2
 DESKS = ('1', '2', '3', '4', '5', '6')
+# Lugares de descanso, numerados da esquerda para a direita e de cima para
+# baixo (índices 0 a 7): em pé na copa ('stand', canto da célula), sentado nas
+# cadeiras da copa e dois em cada sofá ('chair', canto da cadeira, pela regra
+# única de encaixe).
+REST = (('stand', 20, 19, False), ('stand', 60, 17, True), ('chair', 78, 12, False), ('chair', 125, 12, True),
+        ('chair', 56, 43, False), ('chair', 78, 43, True), ('chair', 153, 37, False), ('chair', 175, 37, True))
 PAIR = [(151, 'officeBlue', 'officeGrey', 'stickies', 'flagBR'),
         (244, 'officeOrange', 'officeGreen', 'posterSun', 'doc1'),
         (337, 'officeYellow', 'officeWhite', 'posterBlue', 'flagUS')]
@@ -46,13 +52,13 @@ def rest_layout(sessions, seats, previous=None, rng=random):
     result, occupied = {}, set()
     for name in resting:
         old = previous.get(name)
-        if old in range(6) and old not in occupied:
+        if old in range(len(REST)) and old not in occupied:
             result[name] = old
             occupied.add(old)
     for name in resting:
         if name in result:
             continue
-        free = [slot for slot in range(6) if slot not in occupied]
+        free = [slot for slot in range(len(REST)) if slot not in occupied]
         if free:
             slot = rng.choice(free)
             result[name] = slot
@@ -106,10 +112,13 @@ def render(sessions, seats, phase=0, rest_seats=None):
     live = {s['name']: s for s in sessions}
     rest_seats = rest_seats if rest_seats is not None else rest_layout(sessions, seats)
     resting = {slot: live[name] for name, slot in rest_seats.items() if name in live}
-    if 0 in resting: sprite(resting[0]['skin']+':standing',20,19)
-    if 1 in resting: sprite(resting[1]['skin']+':standing',60,17,True)
-    if 2 in resting: person(resting[2]['skin'],78,12)
-    if 3 in resting: person(resting[3]['skin'],125,12,True)
+    def rest(slots):
+        for slot in slots:
+            if slot in resting:
+                kind, x, y, flip = REST[slot]
+                if kind == 'stand': sprite(resting[slot]['skin']+':standing', x, y, flip)
+                else: person(resting[slot]['skin'], x, y, flip)
+    rest((0, 1, 2, 3))
     for item in [('tableSmall',95,4), ('boxGreen',92,0,True), ('mugCoffee',111,0)]: sprite(*item)
     anchors = []
     for i, (x, lc, rc, ld, rd) in enumerate(PAIR):
@@ -134,9 +143,9 @@ def render(sessions, seats, phase=0, rest_seats=None):
     person(BOSS,x+22,y+7,True)
     for item in [('computerSide1',x-5,y+5,True),('mugCoffee',x+5,y+7),('partitionSingle',x,y+30,True),
                  ('plant',42,40),('sofaGreen',58,40)]: sprite(*item)
-    if 4 in resting: sprite(resting[4]['skin']+':standing',64,38)
+    rest((4, 5))
     sprite('sofaOrange',155,34)
-    if 5 in resting: sprite(resting[5]['skin']+':standing',161,32)
+    rest((6, 7))
     for item in [('plant',200,34),('plant',343,34),('cat',320,36),('binRed',386,34),
                  ('binBlue',259,34),('tableLong',270,34,True),('doc1',285,28),('printer',274,27),('dog',437,25,True)]: sprite(*item)
     for anchor,status,bx in anchors: bubble(anchor,status,bx)

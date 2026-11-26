@@ -1,5 +1,5 @@
 {
-  "comment": "Escritório baseado na cena de exemplo do 2dPig (PixelOffice.png), sem o céu. Coordenadas em pixels lógicos da cena original (256x224), do canto superior esquerdo da célula de cada item no mapa (assets/office/default.json); a faixa do céu (y < 48) é cortada na renderização. Ordem da lista = ordem de desenho. Itens \"seat:X\" marcam onde, na ordem de desenho, entra o personagem sentado no lugar X; \"cup:X\" marca onde entra a xícara do lugar X (só aparece com o lugar ocupado); \"seats\" descreve as baias, com a posição e o espelhamento da cadeira, a xícara e o x do balão (no corredor mais próximo). As baias são numeradas a partir do Boss, da direita para a esquerda e de cima para baixo (1 e 2 ao lado da mesa de chefe), com a mesma numeração no dock do Kitty; \"seatOrder\" é a ordem em que elas são ocupadas. A baia \"A\", na fileira de cima, está fora de uso por enquanto. \"meeting\" são as cadeiras da mesa de reunião, para onde vão o 4º e o 5º ociosos; \"meet:X\" marca onde eles entram na ordem de desenho. A mesa de chefe (Boss, só decoração) fica no lugar da antiga divisória de cima à direita.",
+  "comment": "Escritório baseado na cena de exemplo do 2dPig (PixelOffice.png), sem o céu. Coordenadas em pixels lógicos da cena original (256x224), do canto superior esquerdo da célula de cada item no mapa (assets/office/default.json); a faixa do céu (y < 48) é cortada na renderização. Ordem da lista = ordem de desenho. Itens \"seat:X\" marcam onde, na ordem de desenho, entra o personagem sentado no lugar X; \"cup:X\" marca onde entra a xícara do lugar X (só aparece com o lugar ocupado); \"seats\" descreve as baias, com a posição e o espelhamento da cadeira, a xícara e o x do balão (no corredor mais próximo). As baias são numeradas a partir do Boss, da direita para a esquerda e de cima para baixo (1 e 2 ao lado da mesa de chefe), com a mesma numeração no dock do Kitty; \"seatOrder\" é a ordem em que elas são ocupadas. A baia \"A\", na fileira de cima, está fora de uso por enquanto. \"rest\" são os lugares de descanso, numerados da esquerda para a direita: em pé na copa (\"stand\": centro e linha do pé) ou sentado (\"chair\": canto da cadeira, como nas baias); \"rest:X\" marca onde quem senta no lugar X entra na ordem de desenho. Quem descansa ganha um lugar livre sorteado. A mesa de chefe (Boss, só decoração) fica no lugar da antiga divisória de cima à direita.",
   "crop": {"x": 0, "y": 48, "width": 256, "height": 176},
   "seatOrder": ["1", "2", "3", "4", "5", "6"],
   "seats": {
@@ -11,10 +11,14 @@
     "6": {"chair": [40, 199], "flip": 0, "cup": ["mugCoffee", 52, 197, 1], "bubbleX": 32},
     "A": {"chair": [40, 139], "flip": 0, "cup": ["mugCoffee", 52, 137, 1], "bubbleX": 32}
   },
-  "meeting": {
-    "L": {"chair": [172, 97], "flip": 0},
-    "R": {"chair": [219, 97], "flip": 1},
-    "S": {"chair": [91, 99], "flip": 1}
+  "rest": {
+    "1": {"stand": [15, 126], "flip": 0},
+    "2": {"stand": [33, 126], "flip": 0},
+    "3": {"stand": [51, 126], "flip": 1},
+    "4": {"chair": [68, 99], "flip": 0},
+    "5": {"chair": [90, 99], "flip": 1},
+    "6": {"chair": [172, 97], "flip": 0},
+    "7": {"chair": [219, 97], "flip": 1}
   },
   "items": [
     ["windowNote", 33, 77],
@@ -29,12 +33,12 @@
     ["coffee", 48, 89],
     ["mug", 38, 88],
     ["sofaOrange", 63, 96, 1],
-    ["cat", 56, 86, 1],
-    ["meet:S", 0, 0],
+    ["rest:4", 0, 0],
+    ["rest:5", 0, 0],
     ["chair5", 172, 95],
     ["chair5", 214, 95, 1],
-    ["meet:L", 0, 0],
-    ["meet:R", 0, 0],
+    ["rest:6", 0, 0],
+    ["rest:7", 0, 0],
     ["tableSmall", 189, 89],
     ["boxGreen", 186, 85, 1],
     ["mugCoffee", 205, 85],
@@ -44,6 +48,7 @@
     ["divider", 69, 135],
     ["flagBR", 96, 122],
     ["officeBlue", 40, 137],
+    ["cat", 17, 134],
     ["desk", 52, 143],
     ["desk", 73, 143, 1],
     ["seat:A", 0, 0],
