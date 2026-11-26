@@ -16,22 +16,27 @@ export const FIXED = {
   'chat-ferramentas': { skin: 'char1' },
 };
 
-// Sessões que não são fixas ganham uma skin livre sorteada. As skins das
-// sessões fixas nunca entram no sorteio, nem quando a sessão fixa está
-// fechada: o personagem é sempre dela.
+// Sessões que não são fixas ganham um personagem sorteado entre os que não
+// são de sessões fixas, nem quando a sessão fixa está fechada. Só se todos
+// forem fixos o sorteio usa o elenco inteiro.
 const reserved = new Set(Object.values(FIXED).map((f) => f.skin));
 // Personagens que podem ser sorteados (ou lembrados) por sessões não fixas.
-export const drawable = (cast) => cast.filter((s) => !reserved.has(s));
+export function drawable(cast) {
+  const free = cast.filter((s) => !reserved.has(s));
+  return free.length ? free : cast;
+}
 const reservedSeats = new Set(Object.values(FIXED).map((f) => f.seat).filter(Boolean));
 const pick = (list) => list[Math.floor(Math.random() * list.length)];
 
 // Distribui skins (ids de `cast`, os personagens do catálogo fora o Boss) para
 // a lista de sessões abertas. `remembered` (nome -> skin) é a skin que cada
-// sessão já teve: ela volta com a mesma sempre que estiver livre. Sessões que
-// não couberem ficam sem skin.
+// sessão já teve: ela volta com a mesma sempre que estiver livre. Enquanto
+// houver personagem do sorteio sem dono, ninguém repete; depois, repete o
+// menos usado.
 export function assignSkins(names, remembered, cast) {
   const known = new Set(cast);
   const free = new Set(drawable(cast));
+  const uses = (skin) => [...result.values()].filter((s) => s === skin).length;
   const result = new Map();
   const taken = new Set();
   const give = (name, skin) => {
@@ -45,7 +50,8 @@ export function assignSkins(names, remembered, cast) {
   }
   for (const name of names) {
     if (result.has(name)) continue;
-    const skin = pick([...free].filter((s) => !taken.has(s)));
+    const least = Math.min(...[...free].map(uses));
+    const skin = pick([...free].filter((s) => uses(s) === least));
     if (skin) give(name, skin);
   }
   return result;

@@ -90,14 +90,20 @@ test('personagem fixo que não existe no catálogo entra no sorteio', () => {
   assert.equal(detran.seat, 'I');
 });
 
-test('personagens fixos não entram no sorteio, nem com a sessão fixa fechada', () => {
-  const state = createState({ seatOrder: ORDER, memory: { skins: new Map([['velha', 'custom2']]), seats: new Map() }, cast: ['char1', 'char2', 'char5', 'custom1', 'custom2'] });
-  state.event({ session_id: '1', cwd: `${P}/velha`, event: 'SessionStart' });
-  state.event({ session_id: '2', cwd: `${P}/outra`, event: 'SessionStart' });
-  state.event({ session_id: '3', cwd: `${P}/mais-uma`, event: 'SessionStart' });
-  const skins = state.list().map((s) => s.skin);
-  assert.deepEqual(skins.filter(Boolean).sort(), ['char2']); // só char2 é livre
-  assert.equal(skins.filter((s) => !s).length, 2); // as outras ficam sem personagem
+test('personagens fixos não entram no sorteio; acabando os livres, repete', () => {
+  const state = createState({ seatOrder: ORDER, memory: { skins: new Map([['velha', 'custom2']]), seats: new Map() }, cast: ['char1', 'char2', 'char3', 'char5', 'custom1', 'custom2'] });
+  const open = (name) => state.event({ session_id: name, cwd: `${P}/${name}`, event: 'SessionStart' });
+  open('velha');
+  open('outra');
+  assert.deepEqual(state.list().map((s) => s.skin).sort(), ['char2', 'char3']); // dois livres, sem repetir
+  for (const name of ['mais-uma', 'quarta']) open(name);
+  assert.deepEqual(state.list().map((s) => s.skin).sort(), ['char2', 'char2', 'char3', 'char3']); // repete o menos usado
+});
+
+test('com todos os personagens fixos, o sorteio usa o elenco inteiro', () => {
+  const state = createState({ seatOrder: ORDER, memory: { skins: new Map(), seats: new Map() }, cast: ['char1', 'char5'] });
+  state.event({ session_id: '1', cwd: `${P}/qualquer`, event: 'SessionStart' });
+  assert.ok(['char1', 'char5'].includes(state.list()[0].skin));
 });
 
 test('sessão que volta reencontra skin e lugar da memória', () => {
@@ -122,20 +128,9 @@ test('quem já está sentado não é tirado do lugar por quem volta', () => {
   assert.equal(state.list().find((s) => s.name === 'coisa').seat, coisa);
 });
 
-test('sessões não fixas só sentam enquanto houver personagem livre', () => {
-  const { state, ev } = setup();
-  // 8 personagens, 4 deles de sessões fixas: sobram 4 para o sorteio
-  for (let i = 0; i < 5; i++) ev(String(i), 'SessionStart', `${P}/personal/p${i}`);
-  const list = state.list();
-  assert.equal(list.filter((s) => s.seat).length, 4);
-  assert.equal(list[4].seat, null);
-});
-
 test('a partir da 7ª sessão não há lugar', () => {
   const { state, ev } = setup();
-  ev('f1', 'SessionStart', `${P}/MTI/detran`);
-  ev('f2', 'SessionStart', `${P}/MTI/secretario`);
-  for (let i = 0; i < 5; i++) ev(String(i), 'SessionStart', `${P}/personal/p${i}`);
+  for (let i = 0; i < 7; i++) ev(String(i), 'SessionStart', `${P}/personal/p${i}`);
   const list = state.list();
   assert.equal(list.filter((s) => s.seat).length, 6);
   assert.equal(list[6].seat, null);
