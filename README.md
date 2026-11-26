@@ -57,4 +57,4 @@ launch --type=os-window-dock --dock-edge=bottom --dock-size=9 --dock-skip-focus 
 
 Ajuste o caminho para o projeto e a altura de nove linhas para a fonte e a janela usadas. O programa usa o backend em `http://127.0.0.1:5199/api/stream`; para testar outro backend, passe `--url` com o endereço do stream. A prévia do layout está em `dock-preview.html` no servidor de desenvolvimento.
 
-Para verificar o renderizador sem Kitty, execute `python3 -m unittest discover -s tools/dock -p 'test_*.py'`. A lista lateral de sessões do escritório 2 ainda não foi implementada.
+Para verificar o renderizador sem Kitty, execute `python3 -m unittest discover -s tools/dock -p 'test_*.py'`. A lista lateral de sessões do escritório 2 ainda não foi implementada. Para detalhes de arquitetura, configuração e testes, consulte [Escritório 2 no Kitty](docs/escritorio-2/kitty.md).
