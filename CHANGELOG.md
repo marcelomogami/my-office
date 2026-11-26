@@ -2,7 +2,7 @@
 
 Notable changes are grouped by published version. Complete release notes are also available in the [GitHub releases](https://github.com/marcelomogami/my-office/releases).
 
-## Unreleased
+## [0.7.2](https://github.com/marcelomogami/my-office/releases/tag/v0.7.2)
 
 - Closed sessions (Claude Code `SessionEnd` or ended process, Codex missing from the App Server) stay in the list as away for 8 hours instead of disappearing at once; a new session in the same project replaces them.
 - Sessions with an error or quota bubble follow the same rules as finished sessions: they rest after 10 minutes without activity, leave the room after 4 hours and the list after 8 hours, instead of keeping the bubble at the desk for up to 4 hours.
