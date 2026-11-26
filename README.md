@@ -1,73 +1,75 @@
 # My Office
 
-**Um escritório em pixel art para acompanhar sessões do Claude Code e do Codex.** Cada sessão aparece como um personagem, com um balão que indica quando está trabalhando, terminou, encontrou um erro ou atingiu a cota.
+*[Leia isto em português](README.pt-BR.md)*
 
-![Prévia do escritório no Kitty, com a sala e a lista de sessões](assets/mockups/lista-sessoes-dock.png)
+**A pixel-art office for keeping an eye on Claude Code and Codex sessions.** Each session appears as a character, with a bubble showing whether it is working, finished, encountered an error, or reached its quota.
 
-O projeto é uma visualização local: não controla os agentes nem lê o conteúdo das conversas. Os hooks enviam metadados a um backend em Node, que atualiza as interfaces. A imagem acima usa sessões de exemplo.
+![Preview of the Kitty office, with the room and session list](assets/mockups/lista-sessoes-dock.png)
 
-## Escolha seu escritório
+My Office is a local, read-only display. It does not control agents or read conversation contents. Hooks send session metadata to a Node backend, which updates the interfaces. The image above uses example sessions.
 
-| Interface | Como funciona |
+## Choose your office
+
+| Interface | How it works |
 |---|---|
-| **Página web** | Sala em PixiJS com seis baias, áreas de descanso e lista de sessões. |
-| **Dock do Kitty** | Sala compacta no rodapé do terminal, visível ao trocar de aba, com lista de até nove sessões. |
+| **Web page** | A PixiJS room with six workstations, rest areas, and a session list. |
+| **Kitty dock** | A compact room at the bottom of the terminal, visible across tabs, with a list of up to nine sessions. |
 
-As duas interfaces podem ficar abertas ao mesmo tempo e usam o mesmo backend. O Kitty é opcional para quem usa a página web.
+Both interfaces can run at the same time and share the same backend. Kitty is optional for the web page.
 
-## Começar
+## Get started
 
-Você precisa de Node.js 20.19 ou superior na série 20, ou 22.12 ou superior, e npm. Para testar a página em modo de demonstração:
+You need Node.js 20.19 or later in the 20.x series, or 22.12 or later, and npm. To try the web page with example sessions:
 
 ```sh
 npm install
 npm run dev
 ```
 
-Abra **http://127.0.0.1:5199/?demo**. A demonstração usa sessões de exemplo; para mostrar sessões reais, configure os hooks do agente.
+Open **http://127.0.0.1:5199/?demo**. The demo uses example sessions; configure your agent's hooks to display real sessions.
 
-> O servidor de desenvolvimento usa a porta 5199. Se o serviço do my-office já estiver ativo nessa porta, pare `my-office.socket` e `my-office.service` antes de iniciar o desenvolvimento e volte a iniciar o socket ao terminar.
+> The development server uses port 5199. If the My Office service is already using that port, stop `my-office.socket` and `my-office.service` before starting development, and start the socket again when finished.
 
-Para gerar a versão web de produção e iniciar o backend:
+To build the production web page and start the backend:
 
 ```sh
 npm run build
 npm start
 ```
 
-O backend usa `127.0.0.1:5199` por padrão. O host e a porta podem ser alterados com `MY_OFFICE_HOST` e `MY_OFFICE_PORT`; a API de eventos aceita apenas conexões da própria máquina.
+The backend defaults to `127.0.0.1:5199`. Override the host and port with `MY_OFFICE_HOST` and `MY_OFFICE_PORT`; the event API only accepts connections from the local machine.
 
-## Conectar os agentes
+## Connect your agents
 
-Os scripts [`tools/hook.sh`](tools/hook.sh) e [`tools/codex-hook.sh`](tools/codex-hook.sh) recebem os eventos do Claude Code e do Codex, respectivamente. Eles enviam somente metadados necessários à identificação da sessão e ao status, sem prompt, resposta ou conteúdo de ferramenta.
+The scripts [`tools/hook.sh`](tools/hook.sh) and [`tools/codex-hook.sh`](tools/codex-hook.sh) receive events from Claude Code and Codex, respectively. They send only the metadata needed to identify the session and its status, without prompts, responses, or tool contents.
 
-**[Como instalar, confiar e testar os hooks](documentation/hooks.md)**
+**[Install, trust, and test the hooks](documentation/hooks.md)**
 
-A integração do Codex identifica falhas de modelo como erro e volta ao estado de trabalho em uma nova tentativa. A identificação específica de cota do Codex ainda não está disponível.
+Codex model failures appear as errors, and a subsequent attempt returns the session to working. Specific Codex quota detection is not yet available.
 
-## Usar no Kitty
+## Use the Kitty dock
 
-O dock precisa de Python 3, Pillow e uma versão do Kitty com `os-window-dock` e suporte ao protocolo gráfico. Foi testado no Kitty 0.51.0. O backend precisa estar ativo ou disponível por socket.
+The dock requires Python 3, Pillow, and a Kitty version with `os-window-dock` and graphics protocol support. It was tested with Kitty 0.51.0. The backend must be running or available through its socket.
 
-**[Como configurar e usar o dock do Kitty](documentation/kitty.md)**
+**[Configure and use the Kitty dock](documentation/kitty.md)**
 
-## Como as sessões aparecem
+## Session behavior
 
-Os balões mostram trabalho, conclusão, erro ou cota. Depois de **10 minutos** pronta sem nova tarefa, uma sessão com baia vai descansar. Após **4 horas** sem atividade, sai da sala e libera a baia; após **8 horas**, sai também da lista. Sessões sem baia aparecem como home office e saem da lista após **1 hora** sem atividade.
+Bubbles show working, finished, error, or quota. A session with a workstation moves to a rest area after **10 minutes** finished without a new task. After **4 hours** without activity, it leaves the room and frees its workstation; after **8 hours**, it also leaves the list. Sessions without a workstation appear as home office and leave the list after **1 hour** without activity.
 
-Os nomes, personagens e algumas posições fixas refletem a configuração original do projeto. Para personalizá-los, consulte `server/names.js`, `src/sessions.js` e `tools/dock/office.py`.
+The names, characters, and some fixed positions reflect the project's original setup. To customize them, see `server/names.js`, `src/sessions.js`, and `tools/dock/office.py`.
 
-## Desenvolvimento
+## Development
 
 ```sh
-npm test                                             # testes do backend e da integração
-python3 -m unittest discover -s tools/dock -p 'test_*.py'  # testes do dock
+npm test                                                   # backend and integration tests
+python3 -m unittest discover -s tools/dock -p 'test_*.py' # dock tests
 ```
 
-O backend expõe `POST /api/evento` para receber metadados locais e `GET /api/stream` para transmitir a lista de sessões. As sessões e os lugares lembrados ficam em `~/.local/state/my-office/`, ou no diretório definido por `XDG_STATE_HOME`.
+The backend exposes `POST /api/evento` for local metadata and `GET /api/stream` to broadcast the session list. Sessions and remembered positions are stored in `~/.local/state/my-office/`, or under the directory specified by `XDG_STATE_HOME`.
 
-As units em [`deploy/`](deploy/) mostram a configuração do serviço de usuário com ativação por socket. O caminho do projeto em `deploy/my-office.service` precisa ser ajustado se o repositório estiver em outro local. O histórico de versões está no [changelog](CHANGELOG.md).
+The units in [`deploy/`](deploy/) show a user service with socket activation. Update the project path in `deploy/my-office.service` if the repository is elsewhere. See the [changelog](CHANGELOG.md) for release history.
 
-## Créditos
+## Credits
 
-Os sprites são baseados no [Pixel Office Asset Pack, de 2dPig](https://2dpig.itch.io/pixel-office), distribuído sob [CC0](https://creativecommons.org/publicdomain/zero/1.0/). A folha inclui adaptações e desenhos adicionais feitos para o My Office.
+The sprites are based on the [Pixel Office Asset Pack by 2dPig](https://2dpig.itch.io/pixel-office), released under [CC0](https://creativecommons.org/publicdomain/zero/1.0/). The sheet includes adaptations and additional artwork created for My Office.

@@ -1,60 +1,60 @@
 # Changelog
 
-As mudanças estão organizadas por versão publicada. As notas completas de cada versão também estão nas [releases do GitHub](https://github.com/marcelomogami/my-office/releases).
+Notable changes are grouped by published version. Complete release notes are also available in the [GitHub releases](https://github.com/marcelomogami/my-office/releases).
 
 ## [0.6.1](https://github.com/marcelomogami/my-office/releases/tag/v0.6.1)
 
-- Lista no dock com até nove sessões em três colunas, avatar, nome e status.
-- Tempo parado abaixo do avatar e indicação de home office.
-- Fundo transparente ao redor da sala e dos cartões, integrado ao tema do Kitty.
+- Dock list with up to nine sessions in three columns, including avatar, name, and status.
+- Elapsed idle time below the avatar and home-office indication.
+- Transparent background around the room and cards, matching the Kitty theme.
 
 ## [0.6.0](https://github.com/marcelomogami/my-office/releases/tag/v0.6.0)
 
-- Escritório compacto em dock inferior do Kitty, compartilhando o backend com a página original.
-- Renderizador Python com Pillow, folha de sprites reorganizada e prévia do layout.
-- Seis baias para sessões, uma baia para Boss e seis lugares de descanso; custom1 e custom2 têm posições fixas.
+- Compact office in a bottom Kitty dock, sharing the backend with the original web page.
+- Python renderer using Pillow, reorganized sprite sheet, and layout preview.
+- Six session workstations, one workstation for Boss, and six rest positions; custom1 and custom2 have fixed positions.
 
 ## [0.5.0](https://github.com/marcelomogami/my-office/releases/tag/v0.5.0)
 
-- Detecção da saída de sessões do Codex pela consulta ao App Server local, com confirmação de presença e duas ausências consecutivas.
-- Indisponibilidade do App Server não remove sessões; o hook identifica a origem sem transmitir conteúdo.
+- Detects Codex session exits by querying the local App Server, after confirmed presence and two consecutive absences.
+- App Server unavailability does not remove sessions; the hook identifies the agent without transmitting conversation contents.
 
 ## [0.4.2](https://github.com/marcelomogami/my-office/releases/tag/v0.4.2)
 
-- Restaura a terceira posição de descanso da copa, afastando o personagem da cafeteira.
+- Restores the third break-area position, moving the character away from the coffee machine.
 
 ## [0.4.1](https://github.com/marcelomogami/my-office/releases/tag/v0.4.1)
 
-- Ajusta a altura do personagem no sofá e inverte a direção dos sprites do gato e do cachorro.
+- Adjusts the height of the character seated on the sofa and reverses the direction of the cat and dog sprites.
 
 ## [0.4.0](https://github.com/marcelomogami/my-office/releases/tag/v0.4.0)
 
-- Acrescenta o sexto lugar de descanso no sofá, junto ao gato, e muda o cachorro de lugar.
+- Adds a sixth rest position on the sofa beside the cat and moves the dog.
 
 ## [0.3.0](https://github.com/marcelomogami/my-office/releases/tag/v0.3.0)
 
-- Sessões sem baia aparecem como home office, com rosto e status.
-- Mantêm a indicação de pronto sem contador de descanso e saem da lista após uma hora de inatividade.
+- Sessions without a workstation appear as home office, with avatar and status.
+- They keep the finished indication without a rest timer and leave the list after one hour of inactivity.
 
 ## [0.2.3](https://github.com/marcelomogami/my-office/releases/tag/v0.2.3)
 
-- Descanso após dez minutos; saída da sala após quatro horas e remoção da lista após oito horas sem atividade.
+- Rest after ten minutes, leave the room after four hours, and leave the list after eight hours without activity.
 
 ## [0.2.2](https://github.com/marcelomogami/my-office/releases/tag/v0.2.2)
 
-- Tempo desde a parada na lista lateral, em formato compacto.
+- Compact elapsed time since a session stopped in the sidebar.
 
 ## [0.2.1](https://github.com/marcelomogami/my-office/releases/tag/v0.2.1)
 
-- Falhas de modelo do Codex aparecem como erro; uma nova tentativa retoma o estado trabalhando.
-- Identificação específica de cota do Codex permanece pendente.
+- Codex model failures appear as errors; a new attempt returns the session to working.
+- Specific Codex quota detection remains pending.
 
 ## [0.2.0](https://github.com/marcelomogami/my-office/releases/tag/v0.2.0)
 
-- Integração das sessões do Codex por hooks, enviando apenas metadados.
-- Interrupções passam a mostrar a sessão como pronta.
+- Codex session integration through hooks, sending only metadata.
+- Interruptions mark the session as finished.
 
 ## [0.1.0](https://github.com/marcelomogami/my-office/releases/tag/v0.1.0)
 
-- Primeira sala em pixel art com sessões reais do Claude Code, seis baias, balões de status e quadro lateral.
-- Backend local, hooks de eventos, persistência de sessões e serviço do systemd do usuário.
+- First pixel-art room with real Claude Code sessions, six workstations, status bubbles, and a sidebar.
+- Local backend, event hooks, session persistence, and a systemd user service.
