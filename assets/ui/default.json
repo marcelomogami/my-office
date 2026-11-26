@@ -1,0 +1,15 @@
+{
+  "sheet": "default.png",
+  "gap": 2,
+  "items": {
+    "bubbleThought": [0, 0, 13, 17],
+    "bubbleSpeech": [15, 0, 13, 17],
+    "iconWork1": [0, 19, 9, 9],
+    "iconWork2": [11, 19, 9, 9],
+    "iconWork3": [22, 19, 9, 9],
+    "iconDone": [33, 19, 9, 9],
+    "iconError": [44, 19, 9, 9],
+    "iconQuota": [55, 19, 9, 9],
+    "iconAnger": [66, 19, 9, 9]
+  }
+}
