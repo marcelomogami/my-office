@@ -15,7 +15,7 @@ O escritório 1 e o dock podem receber o mesmo stream simultaneamente. Não é n
 
 O programa Python usa Pillow para compor a imagem em memória a partir da folha e dos objetos da sala. A sala mede 478 × 72 pixels lógicos e é ampliada sem suavização para 956 × 144 pixels; com a margem e a lista, o quadro completo mede 1514 × 148 pixels. O programa codifica o quadro em PNG e o envia ao terminal pelo protocolo gráfico do Kitty.
 
-O backend envia a lista atual na conexão e novamente quando há mudanças. O renderizador atualiza a imagem ao receber uma lista nova. Enquanto há uma sessão trabalhando, ele também atualiza os pontos do balão aproximadamente a cada 400 ms; sem alterações ou animação de trabalho, a imagem fica parada.
+O backend envia a lista atual na conexão e novamente quando há mudanças. O renderizador atualiza a imagem ao receber uma lista nova. Enquanto há uma sessão trabalhando, ele também atualiza os pontos do balão aproximadamente a cada 400 ms. Os tempos na lista são atualizados quando mudam de minuto; fora dessas situações, a imagem fica parada.
 
 A captura do navegador usada no primeiro experimento foi apenas um teste estático. O renderizador atual não depende de navegador, PixiJS ou `kitten icat` para desenhar.
 
