@@ -1,7 +1,7 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer, request } from 'node:http';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createOffice } from './app.js';
@@ -9,7 +9,9 @@ import { createOffice } from './app.js';
 const dir = mkdtempSync(join(tmpdir(), 'my-office-'));
 const memoryFile = join(dir, 'memory.json');
 const sessionsFile = join(dir, 'sessions.json');
-const office = createOffice({ memoryFile, sessionsFile });
+// Pasta de configuração própria do teste, com uma sessão fixa.
+writeFileSync(join(dir, 'config.json'), JSON.stringify({ projects: { fixo: { character: 'char2', desk: 1 } } }));
+const office = createOffice({ memoryFile, sessionsFile, configDir: dir });
 const server = createServer((req, res) => office.handle(req, res, () => res.writeHead(418).end()));
 await new Promise((r) => server.listen(0, '127.0.0.1', r));
 const base = `http://127.0.0.1:${server.address().port}`;
@@ -25,8 +27,15 @@ const post = (body) =>
 test('evento válido responde 204 e só guarda os metadados', async () => {
   const r = await post({ session_id: 's1', cwd: '/tmp/demo', event: 'UserPromptSubmit', tool: 'Bash', prompt: 'segredo' });
   assert.equal(r.status, 204);
-  assert.deepEqual(Object.keys(office.state.list()[0]).sort(), ['name', 'seat', 'since', 'skin', 'status']);
+  assert.deepEqual(Object.keys(office.state.list()[0]).sort(), ['face', 'name', 'seat', 'since', 'skin', 'status']);
   assert.ok(!readFileSync(memoryFile, 'utf8').includes('segredo'));
+});
+
+test('sessão fixa da configuração ganha personagem e baia, e /api/fixed as expõe', async () => {
+  assert.equal((await post({ session_id: 'f1', cwd: '/tmp/fixo', event: 'SessionStart' })).status, 204);
+  const fixo = office.state.list().find((s) => s.name === 'fixo');
+  assert.deepEqual([fixo.skin, fixo.seat, fixo.face], ['char2', '1', 'char2']);
+  assert.deepEqual(await (await fetch(`${base}/api/fixed`)).json(), { fixed: { fixo: { skin: 'char2', seat: '1' } } });
 });
 
 test('eventos inválidos respondem 400', async () => {

@@ -1,4 +1,5 @@
 import { layout } from '../src/sessions.js';
+import { panelFace } from '../src/panel.js';
 import { projectName, uniqueName } from './names.js';
 import { DEFAULT_CAST } from './characters.js';
 
@@ -6,7 +7,8 @@ import { DEFAULT_CAST } from './characters.js';
 //
 // Cada sessão é identificada pelo `session_id` do Claude Code e ganha um nome
 // na primeira vez que aparece (o nome não muda se a sessão trocar de pasta).
-// A lista sai na ordem em que as sessões apareceram, já com skin e lugar.
+// A lista sai na ordem em que as sessões apareceram, já com skin, lugar e o
+// rosto do quadro de sessões.
 
 export const IDLE_AFTER_MS = 10 * 60 * 1000;
 // Sem atividade por tanto tempo, o personagem vai embora: sai da sala e
@@ -69,6 +71,7 @@ export function createState({
   alive = isAlive,
   saved = [],
   cast = DEFAULT_CAST, // ids dos personagens que podem representar sessões
+  fixed = {}, // sessões fixas da configuração: { nome: { skin, seat } }
 }) {
   const sessions = new Map(); // session_id -> { name, status, since, pid }
   for (const { id, name, status, since, pid, agent } of saved) sessions.set(id, { name, status, since, pid, agent });
@@ -76,10 +79,11 @@ export function createState({
   const codexSeen = new Set();
   const codexMisses = new Map();
   let placed = { skins: new Map(), seats: new Map() };
+  const faces = new Map(); // rosto sorteado de quem está em home office
 
   function arrange() {
     const names = [...sessions.values()].filter((s) => s.status !== 'away').map((s) => s.name);
-    const result = layout(names, seatOrder, memory, placed, cast);
+    const result = layout(names, seatOrder, memory, placed, cast, fixed);
     placed = { skins: result.skins, seats: result.seats };
     if (result.changed) onMemoryChange(memory);
   }
@@ -198,6 +202,7 @@ export function createState({
       since,
       skin: placed.skins.get(name) ?? null,
       seat: placed.seats.get(name) ?? null,
+      face: status === 'away' ? null : panelFace(name, placed.skins.get(name), faces, cast, fixed),
     }));
   }
 

@@ -5,21 +5,23 @@ import { panelFace } from '../src/panel.js';
 test('home office mantém a skin fixa ou a skin já atribuída', () => {
   const cache = new Map();
   const cast = ['char1', 'char2', 'custom1'];
-  assert.equal(panelFace('~secretario', null, cache, cast), 'custom1');
-  assert.equal(panelFace('projeto', 'char2', cache, cast), 'char2');
+  const fixed = { fixo: { skin: 'custom1' } };
+  assert.equal(panelFace('fixo', null, cache, cast, fixed), 'custom1');
+  assert.equal(panelFace('projeto', 'char2', cache, cast, fixed), 'char2');
 });
 
 test('sem skin, sorteia rosto estável entre os personagens do sorteio', () => {
   const cache = new Map();
   const cast = ['char1', 'char2'];
-  const first = panelFace('projeto', null, cache, cast, () => 0.99);
+  const first = panelFace('projeto', null, cache, cast, {}, () => 0.99);
   assert.equal(first, 'char2');
-  assert.equal(panelFace('projeto', null, cache, cast, () => 0), first);
+  assert.equal(panelFace('projeto', null, cache, cast, {}, () => 0), first);
 });
 
 test('rosto sorteado nunca é o de uma sessão fixa', () => {
   const cast = ['char1', 'char2', 'custom1'];
-  for (const r of [0, 0.5, 0.99]) assert.equal(panelFace(`p${r}`, null, new Map(), cast, () => r), 'char2');
+  const fixed = { a: { skin: 'char1' }, b: { skin: 'custom1' } };
+  for (const r of [0, 0.5, 0.99]) assert.equal(panelFace(`p${r}`, null, new Map(), cast, fixed, () => r), 'char2');
 });
 
 test('home office mantém indicação de pronto sem tempo ao descansar', async () => {
