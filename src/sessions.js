@@ -17,18 +17,21 @@ export const FIXED = {
 };
 
 // Sessões que não são fixas ganham uma skin livre sorteada. As skins das
-// sessões fixas só entram no sorteio se as outras já estiverem todas ocupadas
-// (emprestadas enquanto a sessão fixa não está aberta).
+// sessões fixas nunca entram no sorteio, nem quando a sessão fixa está
+// fechada: o personagem é sempre dela.
 const reserved = new Set(Object.values(FIXED).map((f) => f.skin));
+// Personagens que podem ser sorteados (ou lembrados) por sessões não fixas.
+export const drawable = (cast) => cast.filter((s) => !reserved.has(s));
 const reservedSeats = new Set(Object.values(FIXED).map((f) => f.seat).filter(Boolean));
 const pick = (list) => list[Math.floor(Math.random() * list.length)];
 
-// Distribui skins (ids de `cast`, os personagens do sorteio) para a lista de
-// sessões abertas. `remembered` (nome -> skin) é a skin que cada sessão já
-// teve: ela volta com a mesma sempre que estiver livre. Sessões que não
-// couberem ficam sem skin.
+// Distribui skins (ids de `cast`, os personagens do catálogo fora o Boss) para
+// a lista de sessões abertas. `remembered` (nome -> skin) é a skin que cada
+// sessão já teve: ela volta com a mesma sempre que estiver livre. Sessões que
+// não couberem ficam sem skin.
 export function assignSkins(names, remembered, cast) {
   const known = new Set(cast);
+  const free = new Set(drawable(cast));
   const result = new Map();
   const taken = new Set();
   const give = (name, skin) => {
@@ -38,13 +41,11 @@ export function assignSkins(names, remembered, cast) {
   for (const name of names) if (known.has(FIXED[name]?.skin)) give(name, FIXED[name].skin);
   for (const name of names) {
     const skin = remembered.get(name);
-    if (!result.has(name) && known.has(skin) && !taken.has(skin)) give(name, skin);
+    if (!result.has(name) && free.has(skin) && !taken.has(skin)) give(name, skin);
   }
   for (const name of names) {
     if (result.has(name)) continue;
-    const free = cast.filter((s) => !taken.has(s));
-    const preferred = free.filter((s) => !reserved.has(s));
-    const skin = pick(preferred.length ? preferred : free);
+    const skin = pick([...free].filter((s) => !taken.has(s)));
     if (skin) give(name, skin);
   }
   return result;

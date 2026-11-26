@@ -13,6 +13,8 @@ PANEL_WIDTH, PANEL_HEIGHT = 1514, 148
 # Mesmas sessões fixas de src/sessions.js (a #5 leva isso para um arquivo de
 # configuração). Personagem fora do catálogo é ignorado.
 FIXED_FACES = {'~detran': 'custom2', '~secretario': 'custom1', '~secretario-dev': 'char5', 'chat-ferramentas': 'char1'}
+# Rostos sorteados nunca usam o personagem de uma sessão fixa.
+DRAWABLE = tuple(c for c in CAST if c not in FIXED_FACES.values()) or CAST
 LABELS = {'working': 'trabalhando', 'done': 'pronto', 'idle': 'descansando',
           'away': 'foi embora', 'error': 'erro', 'quota': 'cota acabou'}
 ICONS = {'working': 'iconWork3', 'done': 'iconDone', 'idle': 'mugCoffee',
@@ -60,8 +62,8 @@ def face_for(session):
     for skin in (FIXED_FACES.get(name), session.get('skin')):
         if skin in CAST:
             return skin
-    index = int.from_bytes(hashlib.sha256(name.encode('utf-8')).digest()[:4], 'big') % len(CAST)
-    return CAST[index]
+    index = int.from_bytes(hashlib.sha256(name.encode('utf-8')).digest()[:4], 'big') % len(DRAWABLE)
+    return DRAWABLE[index]
 
 
 def panel_entries(sessions):

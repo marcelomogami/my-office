@@ -17,6 +17,11 @@ test('sem skin, sorteia rosto estável entre os personagens do sorteio', () => {
   assert.equal(panelFace('projeto', null, cache, cast, () => 0), first);
 });
 
+test('rosto sorteado nunca é o de uma sessão fixa', () => {
+  const cast = ['char1', 'char2', 'custom1'];
+  for (const r of [0, 0.5, 0.99]) assert.equal(panelFace(`p${r}`, null, new Map(), cast, () => r), 'char2');
+});
+
 test('home office mantém indicação de pronto sem tempo ao descansar', async () => {
   const { panelDetails } = await import('../src/panel.js');
   assert.deepEqual(panelDetails('projeto', 'idle', false, 0, 600000), { title: 'projeto (home office)', text: '👍 pronto' });
