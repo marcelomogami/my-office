@@ -1,5 +1,7 @@
 # My Office
 
+[![Tests](https://github.com/marcelomogami/my-office/actions/workflows/tests.yml/badge.svg)](https://github.com/marcelomogami/my-office/actions/workflows/tests.yml)
+
 *[Read this in English](README.md)*
 
 **Um escritório em pixel art para acompanhar sessões do Claude Code e do Codex.** Cada sessão aparece como um personagem, com um balão que indica quando está trabalhando, terminou, encontrou um erro ou atingiu a cota.
