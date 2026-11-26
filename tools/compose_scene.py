@@ -1,7 +1,7 @@
 """Gera um PNG da cena sem navegador, com a mesma lógica do src/main.js.
 
 Uso: python3 tools/compose_scene.py [saida.png]
-     (padrão: assets/mockups/office-layout-claude.png, ampliado 5x)"""
+     (padrão: office.png no diretório atual, ampliado 5x)"""
 import json, sys
 from pathlib import Path
 from PIL import Image
@@ -60,7 +60,7 @@ def main():
     scene = json.loads((ROOT / "src/scene.json").read_text())
     c = scene["crop"]
     im = compose(scene["items"]).crop((c["x"], c["y"], c["x"] + c["width"], c["y"] + c["height"]))
-    out = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "assets/mockups/office-layout-claude.png"
+    out = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("office.png")
     im.resize((im.width * 5, im.height * 5), Image.NEAREST).convert("RGB").save(out)
     print("gerado:", out)
 

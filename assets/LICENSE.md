@@ -13,7 +13,7 @@ Copyright (c) 2026 marcelomogami
 The artwork created or adapted for this project is licensed under [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/). This includes:
 
 - the additions and adaptations in the project sprite sheets (`PixelOfficeAssets*.png` and `PixelOfficeAssets*.aseprite`), such as seated characters, office chairs, the double door, status bubbles and icons, and the boss desk monitor;
-- the images in [`mockups/`](mockups/).
+- the images in [`documentation/images/`](../documentation/images/).
 
 You may share and adapt this artwork for any purpose, including commercially, as long as you give appropriate credit (for example, "Artwork by marcelomogami, from My Office"), link to the license and indicate if changes were made.
 

@@ -6,7 +6,7 @@
 
 **A pixel-art office for keeping an eye on Claude Code and Codex sessions.** Each session appears as a character, with a bubble showing whether it is working, finished, encountered an error, or reached its quota.
 
-![Preview of the Kitty office, with the room and session list](assets/mockups/lista-sessoes-dock.png)
+![Preview of the Kitty office, with the room and session list](documentation/images/lista-sessoes-dock.png)
 
 My Office is a local, read-only display. It does not control agents or read conversation contents. Hooks send session metadata to a Node backend, which updates the interfaces. The image above uses example sessions.
 
