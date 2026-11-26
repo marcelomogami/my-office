@@ -17,7 +17,7 @@ test('sete lugares de descanso, um por baia mais o do Boss', () => {
 
 test('o sofá tem dois lugares, desenhados depois dele', () => {
   const sofa = scene.items.findIndex(([name]) => name === 'sofaOrange');
-  const slots = ['rest:4', 'rest:5'].map((n) => scene.items.findIndex(([name]) => name === n));
+  const slots = ['rest:3', 'rest:4'].map((n) => scene.items.findIndex(([name]) => name === n));
   assert.ok(slots.every((i) => i > sofa));
   assert.equal(scene.items.filter(([name]) => name === 'cat').length, 1);
   assert.equal(scene.items.filter(([name]) => name === 'dog').length, 1);

@@ -20,12 +20,12 @@ from sheets import BOSS, FACES, crop, frame, seated_at
 
 WIDTH, HEIGHT, SCALE = 478, 72, 2
 DESKS = ('1', '2', '3', '4', '5', '6')
-# Lugares de descanso, numerados da esquerda para a direita e de cima para
-# baixo (índices 0 a 7): em pé na copa ('stand', canto da célula), sentado nas
-# cadeiras da copa e dois em cada sofá ('chair', canto da cadeira, pela regra
-# única de encaixe).
-REST = (('stand', 20, 19, False), ('stand', 60, 17, True), ('chair', 78, 12, False), ('chair', 125, 12, True),
-        ('chair', 56, 43, False), ('chair', 78, 43, True), ('chair', 153, 37, False), ('chair', 175, 37, True))
+# Lugares de descanso, numerados como as baias, a partir do Boss: da direita
+# para a esquerda e de cima para baixo (índices 0 a 7). Em pé na copa
+# ('stand', canto da célula), sentado nas cadeiras da copa e dois em cada sofá
+# ('chair', canto da cadeira, pela regra única de encaixe).
+REST = (('chair', 125, 12, True), ('chair', 78, 12, False), ('stand', 60, 17, True), ('stand', 20, 19, False),
+        ('chair', 175, 37, True), ('chair', 153, 37, False), ('chair', 78, 43, True), ('chair', 56, 43, False))
 PAIR = [(151, 'officeBlue', 'officeGrey', 'stickies', 'flagBR'),
         (244, 'officeOrange', 'officeGreen', 'posterSun', 'doc1'),
         (337, 'officeYellow', 'officeWhite', 'posterBlue', 'flagUS')]
@@ -143,9 +143,9 @@ def render(sessions, seats, phase=0, rest_seats=None):
     person(BOSS,x+22,y+7,True)
     for item in [('computerSide1',x-5,y+5,True),('mugCoffee',x+5,y+7),('partitionSingle',x,y+30,True),
                  ('plant',42,40),('sofaGreen',58,40)]: sprite(*item)
-    rest((4, 5))
-    sprite('sofaOrange',155,34)
     rest((6, 7))
+    sprite('sofaOrange',155,34)
+    rest((4, 5))
     for item in [('plant',200,34),('plant',343,34),('cat',320,36),('binRed',386,34),
                  ('binBlue',259,34),('tableLong',270,34,True),('doc1',285,28),('printer',274,27),('dog',437,25,True)]: sprite(*item)
     for anchor,status,bx in anchors: bubble(anchor,status,bx)

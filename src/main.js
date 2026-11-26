@@ -182,9 +182,10 @@ function seatIn(person, id, seatId) {
 const REST = Object.entries(scene.rest);
 const idleTaken = new Set();
 
-function goIdle(person, id) {
+// `only`: lugar escolhido (para a demonstração de descanso); sem ele, sorteia.
+function goIdle(person, id, only) {
   if (person.idle) return true;
-  const free = REST.filter(([spot]) => !idleTaken.has(spot));
+  const free = REST.filter(([spot]) => !idleTaken.has(spot) && (!only || spot === only));
   if (!free.length) return false;
   const [spot, place] = free[Math.floor(Math.random() * free.length)];
   if (place.stand) {
@@ -407,7 +408,17 @@ if (!DEMO) {
 // ---------------------------------------------------------------- demonstração
 // Com ?demo na URL, as sessões fixas da configuração local e outras de
 // exemplo, até cinco; com ?demo&ciclo, os status giram a cada 2,5 s.
-if (DEMO) {
+// Com ?demo&descanso, um personagem em cada lugar de descanso, na ordem dos
+// números, para conferir as posições. ?demo&descanso=char3,char1,... escolhe
+// quem fica em cada lugar.
+if (DEMO && new URLSearchParams(location.search).has('descanso')) {
+  const chosen = new URLSearchParams(location.search).get('descanso').split(',').filter((id) => people.has(id));
+  const order = [...new Set([...chosen, ...CAST])];
+  REST.forEach(([spot], i) => {
+    const id = order[i];
+    if (id) goIdle(people.get(id), id, spot);
+  });
+} else if (DEMO) {
   const demoNames = [...new Set([...Object.keys(DEMO_FIXED), 'my-office', 'website', 'api', 'notes', 'scripts'])].slice(0, 5);
   const demoStatus = ['working', 'error', 'idle', 'done', 'quota'];
   setSessions(demoNames.map((name, i) => ({ name, status: demoStatus[i] })));
