@@ -70,6 +70,10 @@ O backend expõe `POST /api/evento` para receber metadados locais e `GET /api/st
 
 As units em [`deploy/`](deploy/) mostram a configuração do serviço de usuário com ativação por socket. O caminho do projeto em `deploy/my-office.service` precisa ser ajustado se o repositório estiver em outro local. O histórico de versões está no [changelog](CHANGELOG.md).
 
+## Licença
+
+O código é licenciado sob a [GNU General Public License v3.0 ou posterior](LICENSE). A arte criada para o My Office é licenciada sob [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/deed.pt-br); veja [`assets/LICENSE.md`](assets/LICENSE.md).
+
 ## Créditos
 
 Os sprites são baseados no [Pixel Office Asset Pack, de 2dPig](https://2dpig.itch.io/pixel-office), distribuído sob [CC0](https://creativecommons.org/publicdomain/zero/1.0/). A folha inclui adaptações e desenhos adicionais feitos para o My Office.

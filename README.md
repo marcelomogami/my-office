@@ -70,6 +70,10 @@ The backend exposes `POST /api/evento` for local metadata and `GET /api/stream` 
 
 The units in [`deploy/`](deploy/) show a user service with socket activation. Update the project path in `deploy/my-office.service` if the repository is elsewhere. See the [changelog](CHANGELOG.md) for release history.
 
+## License
+
+The code is licensed under the [GNU General Public License v3.0 or later](LICENSE). The artwork created for My Office is licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/); see [`assets/LICENSE.md`](assets/LICENSE.md).
+
 ## Credits
 
 The sprites are based on the [Pixel Office Asset Pack by 2dPig](https://2dpig.itch.io/pixel-office), released under [CC0](https://creativecommons.org/publicdomain/zero/1.0/). The sheet includes adaptations and additional artwork created for My Office.

@@ -2,6 +2,10 @@
 
 Notable changes are grouped by published version. Complete release notes are also available in the [GitHub releases](https://github.com/marcelomogami/my-office/releases).
 
+## Unreleased
+
+- Licenses the code under GPL-3.0-or-later and the artwork created for the project under CC BY 4.0; the original 2dPig pack remains CC0.
+
 ## [0.7.0](https://github.com/marcelomogami/my-office/releases/tag/v0.7.0)
 
 - Renames the manager character to Boss and adds the Boss as the first card in the Kitty list, without a status for now. Up to eight session cards follow.
