@@ -1,15 +1,13 @@
-import { FIXED, SKINS } from './sessions.js';
+import { FIXED } from './sessions.js';
 import { STATUS } from './status.js';
 import { elapsedLabel } from './elapsed.js';
 
 // O rosto do home office é apenas visual e pode repetir o de outra sessão.
-export function panelFace(name, assigned, remembered, random = Math.random) {
-  if (FIXED[name]) return FIXED[name].skin;
+// `cast`: ids dos personagens que podem representar sessões.
+export function panelFace(name, assigned, remembered, cast, random = Math.random) {
+  if (cast.includes(FIXED[name]?.skin)) return FIXED[name].skin;
   if (assigned) return assigned;
-  if (!remembered.has(name)) {
-    const choices = Object.keys(SKINS).filter((skin) => !SKINS[skin].decor);
-    remembered.set(name, choices[Math.floor(random() * choices.length)]);
-  }
+  if (!remembered.has(name)) remembered.set(name, cast[Math.floor(random() * cast.length)]);
   return remembered.get(name);
 }
 

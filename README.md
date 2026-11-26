@@ -59,7 +59,7 @@ The dock requires Python 3, Pillow, and a Kitty version with `os-window-dock` an
 
 Bubbles show working, finished, error, or quota. A session with a workstation moves to a rest area after **10 minutes** without a new task, whether it finished, failed, or reached its quota. After **4 hours** without activity, it leaves the room and frees its workstation; after **8 hours**, it also leaves the list. A closed session leaves the room at once and stays in the list as away for 8 hours; a new session in the same project replaces it. Sessions without a workstation appear as home office and leave the list after **1 hour** without activity.
 
-The names, characters, and some fixed positions reflect the project's original setup. To customize them, see `server/names.js`, `src/sessions.js`, and `tools/dock/office.py`.
+Characters come from a sprite sheet and catalog that you can extend or replace with your own, outside the repository: see **[Characters](documentation/characters.md)**. Session names and some fixed positions still reflect the project's original setup; to change them, see `server/names.js` and `src/sessions.js`.
 
 ## Development
 

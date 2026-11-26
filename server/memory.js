@@ -30,9 +30,13 @@ function writeJson(file, data) {
   }
 }
 
+// Ids da folha antiga (até a 0.7), convertidos para os do catálogo.
+const LEGACY_SKINS = { s0: 'char1', s1: 'char3', s2: 'char2', s3: 'char5', s4: 'char4', s6: 'custom1', s7: 'custom2' };
+
 export function loadMemory(file = MEMORY_FILE) {
   const { skins = {}, seats = {} } = readJson(file) ?? {};
-  return { skins: new Map(Object.entries(skins)), seats: new Map(Object.entries(seats)) };
+  const skinOf = ([name, skin]) => [name, LEGACY_SKINS[skin] ?? skin];
+  return { skins: new Map(Object.entries(skins).map(skinOf)), seats: new Map(Object.entries(seats)) };
 }
 
 export function saveMemory(memory, file = MEMORY_FILE) {

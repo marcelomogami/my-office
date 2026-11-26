@@ -4,15 +4,17 @@ import { panelFace } from '../src/panel.js';
 
 test('home office mantém a skin fixa ou a skin já atribuída', () => {
   const cache = new Map();
-  assert.equal(panelFace('~secretario', null, cache), 's6');
-  assert.equal(panelFace('projeto', 's2', cache), 's2');
+  const cast = ['char1', 'char2', 'custom1'];
+  assert.equal(panelFace('~secretario', null, cache, cast), 'custom1');
+  assert.equal(panelFace('projeto', 'char2', cache, cast), 'char2');
 });
 
-test('sem skin, sorteia rosto estável sem usar o gerente', () => {
+test('sem skin, sorteia rosto estável entre os personagens do sorteio', () => {
   const cache = new Map();
-  const first = panelFace('projeto', null, cache, () => 0.99);
-  assert.ok(first && first !== 's5');
-  assert.equal(panelFace('projeto', null, cache, () => 0), first);
+  const cast = ['char1', 'char2'];
+  const first = panelFace('projeto', null, cache, cast, () => 0.99);
+  assert.equal(first, 'char2');
+  assert.equal(panelFace('projeto', null, cache, cast, () => 0), first);
 });
 
 test('home office mantém indicação de pronto sem tempo ao descansar', async () => {

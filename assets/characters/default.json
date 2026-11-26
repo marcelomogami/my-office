@@ -3,7 +3,7 @@
   "cell": [21, 24],
   "gap": 2,
   "characters": [
-    {"id": "boss", "boss": true, "seated": [0, 0], "standing": [1, 0], "face": [3, 3, 13, 14]},
+    {"id": "boss", "seated": [0, 0], "standing": [1, 0], "face": [3, 3, 13, 14]},
     {"id": "char1", "seated": [2, 0], "standing": [3, 0], "face": [2, 1, 15, 14]},
     {"id": "char2", "seated": [4, 0], "standing": [5, 0], "face": [3, 3, 13, 14]},
     {"id": "char3", "seated": [6, 0], "standing": [7, 0], "face": [2, 0, 19, 14]},

@@ -1,32 +1,19 @@
 // Quem é quem no escritório, e onde cada um senta.
 //
-// Skin = personagem da folha (`sN` sentado, `pN` em pé). As sessões que
-// existem sempre ganham sempre a mesma skin; as demais ganham uma skin livre
-// sorteada. O lugar (baia) é escolhido à parte: a primeira baia livre na ordem
-// de preferência da cena, e a skin vai junto.
+// Skin = personagem do catálogo (src/characters.js), pelo id. As sessões
+// fixas ganham sempre o mesmo personagem; as demais ganham um personagem livre
+// sorteado. O lugar (baia) é escolhido à parte: a primeira baia livre na ordem
+// de preferência da cena, e o personagem vai junto.
 
-// `decor`: personagem que é só decoração da sala e não representa sessão.
-// `fit`: deslocamento [x, y] do sprite sentado em relação à cadeira, para o
-// contorno do tronco ficar logo depois de 1 pixel colorido do encosto e o
-// quadril na linha 15 da cadeira. Em cadeira espelhada, o x é espelhado.
-export const SKINS = {
-  s0: { label: 'guri de cabelo preto', fit: [1, -3] },
-  s1: { label: 'guri do topete', fit: [1, -4] },
-  s2: { label: 'o de óculos', fit: [2, -1] },
-  s3: { label: 'menina ruiva', fit: [-1, -4] },
-  s4: { label: 'menina de cabelo preto', fit: [-1, -4] },
-  s5: { label: 'Boss', fit: [2, -1], decor: true }, // na mesa de chefe, fora do sorteio
-  s6: { label: 'custom1', fit: [2, -1] },
-  s7: { label: 'custom2', fit: [2, -1] },
-};
-
-// Sessões fixas: skin e, se tiver, baia própria. Mude aqui para trocar quem é
-// quem. As baias fixas ficam na frente da mesa de chefe.
+// Sessões fixas: personagem e, se tiver, baia própria. Mude aqui para trocar
+// quem é quem (a #5 leva isso para um arquivo de configuração). As baias fixas
+// ficam na frente da mesa de chefe. Personagem que não existe no catálogo é
+// ignorado e a sessão entra no sorteio.
 export const FIXED = {
-  '~detran': { skin: 's7', seat: 'I' }, // custom2, à direita de quem olha
-  '~secretario': { skin: 's6', seat: 'F' }, // custom1, à esquerda de quem olha
-  '~secretario-dev': { skin: 's3' },
-  'chat-ferramentas': { skin: 's0' }, // sessão do Codex (ainda não ligada)
+  '~detran': { skin: 'custom2', seat: 'I' }, // à direita de quem olha
+  '~secretario': { skin: 'custom1', seat: 'F' }, // à esquerda de quem olha
+  '~secretario-dev': { skin: 'char5' },
+  'chat-ferramentas': { skin: 'char1' },
 };
 
 // Sessões que não são fixas ganham uma skin livre sorteada. As skins das
@@ -36,24 +23,26 @@ const reserved = new Set(Object.values(FIXED).map((f) => f.skin));
 const reservedSeats = new Set(Object.values(FIXED).map((f) => f.seat).filter(Boolean));
 const pick = (list) => list[Math.floor(Math.random() * list.length)];
 
-// Distribui skins para a lista de sessões abertas. `remembered` (nome -> skin)
-// é a skin que cada sessão já teve: ela volta com a mesma sempre que estiver
-// livre. Sessões que não couberem ficam sem skin.
-export function assignSkins(names, remembered = new Map()) {
+// Distribui skins (ids de `cast`, os personagens do sorteio) para a lista de
+// sessões abertas. `remembered` (nome -> skin) é a skin que cada sessão já
+// teve: ela volta com a mesma sempre que estiver livre. Sessões que não
+// couberem ficam sem skin.
+export function assignSkins(names, remembered, cast) {
+  const known = new Set(cast);
   const result = new Map();
   const taken = new Set();
   const give = (name, skin) => {
     result.set(name, skin);
     taken.add(skin);
   };
-  for (const name of names) if (FIXED[name]) give(name, FIXED[name].skin);
+  for (const name of names) if (known.has(FIXED[name]?.skin)) give(name, FIXED[name].skin);
   for (const name of names) {
     const skin = remembered.get(name);
-    if (!result.has(name) && skin && !taken.has(skin)) give(name, skin);
+    if (!result.has(name) && known.has(skin) && !taken.has(skin)) give(name, skin);
   }
   for (const name of names) {
     if (result.has(name)) continue;
-    const free = Object.keys(SKINS).filter((s) => !taken.has(s) && !SKINS[s].decor);
+    const free = cast.filter((s) => !taken.has(s));
     const preferred = free.filter((s) => !reserved.has(s));
     const skin = pick(preferred.length ? preferred : free);
     if (skin) give(name, skin);
@@ -108,10 +97,11 @@ export function assignSeats(names, order, remembered = new Map()) {
 
 // Distribui skins e lugares para as sessões abertas, nesta ordem de
 // preferência: o que a sessão já tem agora (`current`), o que ela teve antes
-// (`memory`) e o sorteio. Atualiza `memory` (skins só das sessões que não são
-// fixas) e diz se ela mudou, para quem chama gravar.
-export function layout(names, seatOrder, memory, current = { skins: new Map(), seats: new Map() }) {
-  const skins = assignSkins(names, new Map([...memory.skins, ...current.skins]));
+// (`memory`) e o sorteio entre os personagens de `cast`. Atualiza `memory`
+// (skins só das sessões que não são fixas) e diz se ela mudou, para quem chama
+// gravar.
+export function layout(names, seatOrder, memory, current = { skins: new Map(), seats: new Map() }, cast = []) {
+  const skins = assignSkins(names, new Map([...memory.skins, ...current.skins]), cast);
   const seated = names.filter((n) => skins.has(n));
   const seats = assignSeats(seated, seatOrder, new Map([...memory.seats, ...current.seats]));
   let changed = false;

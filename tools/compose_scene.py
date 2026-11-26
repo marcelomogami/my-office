@@ -7,7 +7,6 @@ from pathlib import Path
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parent.parent
-FRAMES = json.loads((ROOT / "src" / "frames.json").read_text())
 BG = json.loads((ROOT / "src" / "background.json").read_text())
 
 def hexc(s): return tuple(int(s[i:i+2], 16) for i in (1, 3, 5)) + (255,)
@@ -37,11 +36,9 @@ def background(w, h):
                 px[x, y] = hexc(c)
     return im
 
-def small(path):
-    big = Image.open(ROOT / path).convert("RGBA")
-    return big.resize((big.width // 5, big.height // 5), Image.NEAREST)
-
-SHEET = small("assets/pixel-office-2dpig/PixelOfficeAssetsNew2.png")  # personagens, até a #6
+# Personagens do catálogo padrão (o Boss aparece na cena como "boss:standing").
+CHARS = json.loads((ROOT / "assets/characters/default.json").read_text())
+CHAR_SHEET = Image.open(ROOT / "assets/characters" / CHARS["sheet"]).convert("RGBA")
 OFFICE = json.loads((ROOT / "assets/office/default.json").read_text())["items"]
 OFFICE_SHEET = Image.open(ROOT / "assets/office/default.png").convert("RGBA")
 
@@ -49,7 +46,10 @@ def sprite(name, flip=False):
     if name in OFFICE:
         fx, fy, fw, fh = OFFICE[name]; src = OFFICE_SHEET
     else:
-        fx, fy, fw, fh = FRAMES[name]; src = SHEET
+        cid, pose = name.split(":")
+        (cw, ch), gap = CHARS["cell"], CHARS["gap"]
+        col, row = next(c[pose] for c in CHARS["characters"] if c["id"] == cid)
+        fx, fy, fw, fh = col * (cw + gap), row * (ch + gap), cw, ch; src = CHAR_SHEET
     spr = src.crop((fx, fy, fx + fw, fy + fh))
     return spr.transpose(Image.FLIP_LEFT_RIGHT) if flip else spr
 

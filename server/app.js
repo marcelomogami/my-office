@@ -1,5 +1,7 @@
-import { readFileSync } from 'node:fs';
+import { createReadStream, readFileSync } from 'node:fs';
 import { createState } from './state.js';
+import { loadCharacters, CONFIG_DIR } from './characters.js';
+import { castOf } from '../src/characters.js';
 import { loadMemory, saveMemory, loadSessions, saveSessions, MEMORY_FILE, SESSIONS_FILE } from './memory.js';
 
 // Rotas do backend, usadas tanto pelo servidor (server/index.js) quanto pelo
@@ -7,6 +9,8 @@ import { loadMemory, saveMemory, loadSessions, saveSessions, MEMORY_FILE, SESSIO
 //
 //   POST /api/evento  evento de um hook: { session_id, cwd, event, pid, error, agent }
 //   GET  /api/stream  server-sent events com a lista de sessões a cada mudança
+//   GET  /api/characters              catálogo de personagens (padrão + custom)
+//   GET  /api/characters/<folha>.png  folha de personagens (default ou custom)
 
 const scene = JSON.parse(readFileSync(new URL('../src/scene.json', import.meta.url), 'utf8'));
 
@@ -20,14 +24,18 @@ export function createOffice({
   tickMs = 30_000,
   heartbeatMs = 25_000,
   codexLoad = null,
+  configDir = CONFIG_DIR,
   ...options
 } = {}) {
   const memory = loadMemory(memoryFile);
+  // Lido na partida: personagem novo no catálogo entra depois de reiniciar.
+  const characters = loadCharacters({ configDir });
   const state = createState({
     seatOrder: scene.seatOrder,
     memory,
     onMemoryChange: (m) => saveMemory(m, memoryFile),
     saved: loadSessions(sessionsFile),
+    cast: castOf(characters.characters),
     ...options,
   });
   const clients = new Set();
@@ -102,11 +110,23 @@ export function createOffice({
     req.on('close', () => clients.delete(res));
   }
 
+  function characterRoute(path, res) {
+    if (path === '/api/characters') {
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-cache' });
+      return res.end(JSON.stringify({ characters: characters.characters }));
+    }
+    const sheet = characters.sheets[path.match(/^\/api\/characters\/([a-z]+)\.png$/)?.[1]];
+    if (!sheet) return reply(res, 404);
+    res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'no-cache' });
+    createReadStream(sheet).on('error', () => res.end()).pipe(res);
+  }
+
   // Middleware no formato do Connect (o do Vite): o que não é da API segue.
   function handle(req, res, next) {
     const path = req.url.split('?')[0];
     if (path === '/api/evento' && req.method === 'POST') return receive(req, res);
     if (path === '/api/stream' && req.method === 'GET') return stream(req, res);
+    if (path.startsWith('/api/characters') && req.method === 'GET') return characterRoute(path, res);
     if (path.startsWith('/api/')) return reply(res, 404);
     return next();
   }

@@ -5,6 +5,8 @@ import { createState } from './state.js';
 
 const ORDER = ['G', 'H', 'F', 'I', 'D', 'E'];
 const P = `${homedir()}/projects`;
+// Catálogo padrão mais dois personagens custom, como na máquina do Boss.
+const CAST = ['char1', 'char2', 'char3', 'char4', 'char5', 'char6', 'custom1', 'custom2'];
 
 function setup({ dead = new Set(), saved = [] } = {}) {
   let t = 0;
@@ -12,7 +14,7 @@ function setup({ dead = new Set(), saved = [] } = {}) {
   let saves = 0;
   const state = createState({
     seatOrder: ORDER, memory, onMemoryChange: () => saves++, now: () => t, idleAfterMs: 1000,
-    alive: (pid) => !dead.has(pid), saved, awayAfterMs: 5000,
+    alive: (pid) => !dead.has(pid), saved, awayAfterMs: 5000, cast: CAST,
   });
   const ev = (id, event, cwd = `${P}/personal/my-office`) => state.event({ session_id: id, cwd, event });
   return { state, ev, memory, dead, advance: (ms) => (t += ms), saves: () => saves };
@@ -71,13 +73,21 @@ test('nomes, skins fixas e baias fixas', () => {
   ev('2', 'SessionStart', `${P}/personal/my-office`);
   ev('3', 'SessionStart', `${P}/personal/my-office/src`);
   const [detran, a, b] = state.list();
-  assert.deepEqual([detran.name, detran.skin, detran.seat], ['~detran', 's7', 'I']);
+  assert.deepEqual([detran.name, detran.skin, detran.seat], ['~detran', 'custom2', 'I']);
   assert.equal(a.name, 'my-office');
   assert.equal(b.name, 'my-office (2)');
   assert.notEqual(a.skin, b.skin);
   assert.ok(saves() > 0);
   assert.equal(memory.skins.has('~detran'), false); // fixa não vai para a memória
   assert.equal(memory.seats.get('my-office'), a.seat);
+});
+
+test('personagem fixo que não existe no catálogo entra no sorteio', () => {
+  const state = createState({ seatOrder: ORDER, memory: { skins: new Map(), seats: new Map() }, cast: ['char1', 'char2'] });
+  state.event({ session_id: '1', cwd: `${P}/MTI/detran`, event: 'SessionStart' });
+  const [detran] = state.list();
+  assert.ok(['char1', 'char2'].includes(detran.skin));
+  assert.equal(detran.seat, 'I');
 });
 
 test('sessão que volta reencontra skin e lugar da memória', () => {
@@ -128,7 +138,7 @@ test('snapshot volta num estado novo, com as sessões mortas já fora da sala', 
   const saved = first.state.snapshot();
   const again = setup({ saved, dead: new Set([222]) });
   assert.deepEqual(again.state.list(), [
-    { name: '~secretario', status: 'done', since: 0, skin: 's6', seat: 'F' },
+    { name: '~secretario', status: 'done', since: 0, skin: 'custom1', seat: 'F' },
     { name: 'b', status: 'away', since: 0, skin: null, seat: null },
   ]);
   again.advance(1000);

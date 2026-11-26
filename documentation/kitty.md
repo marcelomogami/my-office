@@ -8,7 +8,7 @@ Office 2 is a My Office display for the bottom of a Kitty window. It uses the sa
 
 - The Node backend receives local events from hooks and provides the session list at `GET /api/stream`.
 - `tools/dock/office.py` keeps a connection to the stream, composes the room, and sends frames to Kitty. It retries if the connection drops.
-- Furniture comes from `assets/office/` and bubbles and icons from `assets/ui/`, with the same maps used by Office 1 (`default.json`, one full cell per item); `tools/dock/sheets.py` loads them. Characters still come from `assets/pixel-office-2dpig/PixelOfficeAssetsNew3.png`, mapped in `tools/dock/frames.json`.
+- Furniture comes from `assets/office/` and bubbles and icons from `assets/ui/`, with the same maps used by Office 1 (`default.json`, one full cell per item); `tools/dock/sheets.py` loads them. Characters come from the same catalogs as Office 1, default and custom (see [Characters](characters.md)).
 
 Office 1 and the dock can receive the same stream simultaneously. The Office 1 page does not need to remain open. They share the backend and hooks; the dock renderer does not send commands to agents.
 

@@ -5,13 +5,14 @@ import time
 
 from PIL import Image, ImageDraw, ImageFont
 
-from sheets import crop
+from sheets import BOSS, CAST, crop, face as face_crop
 
 CARD_WIDTH, CARD_HEIGHT, GAP = 178, 44, 6
 TOP, LEFT = 4, 968
 PANEL_WIDTH, PANEL_HEIGHT = 1514, 148
-FIXED_FACES = {'~detran': 's7', '~secretario': 's6', '~secretario-dev': 's3', 'chat-ferramentas': 's0'}
-FACES = ('s0', 's1', 's2', 's3', 's4', 's6', 's7')
+# Mesmas sessões fixas de src/sessions.js (a #5 leva isso para um arquivo de
+# configuração). Personagem fora do catálogo é ignorado.
+FIXED_FACES = {'~detran': 'custom2', '~secretario': 'custom1', '~secretario-dev': 'char5', 'chat-ferramentas': 'char1'}
 LABELS = {'working': 'trabalhando', 'done': 'pronto', 'idle': 'descansando',
           'away': 'foi embora', 'error': 'erro', 'quota': 'cota acabou'}
 ICONS = {'working': 'iconWork3', 'done': 'iconDone', 'idle': 'mugCoffee',
@@ -54,18 +55,18 @@ def details(session, seated, now):
 
 def face_for(session):
     if session.get('_boss'):
-        return 's5'
+        return BOSS
     name = session['name']
-    skin = FIXED_FACES.get(name) or session.get('skin')
-    if skin in FACES:
-        return skin
-    index = int.from_bytes(hashlib.sha256(name.encode('utf-8')).digest()[:4], 'big') % len(FACES)
-    return FACES[index]
+    for skin in (FIXED_FACES.get(name), session.get('skin')):
+        if skin in CAST:
+            return skin
+    index = int.from_bytes(hashlib.sha256(name.encode('utf-8')).digest()[:4], 'big') % len(CAST)
+    return CAST[index]
 
 
 def panel_entries(sessions):
     """O Boss ocupa o primeiro cartão, seguido por até oito sessões."""
-    return [{'name': 'Boss', 'skin': 's5', '_boss': True}, *sessions[:8]]
+    return [{'name': 'Boss', 'skin': BOSS, '_boss': True}, *sessions[:8]]
 
 
 def compose(room, sessions, seats, now=None):
@@ -80,9 +81,8 @@ def compose(room, sessions, seats, now=None):
         draw.rounded_rectangle((x, y, x + CARD_WIDTH - 1, y + CARD_HEIGHT - 1),
                                radius=5, fill='#172430', outline='#2a3844')
         skin = face_for(session)
-        standing = crop('p' + skin[1:])
-        width = standing.width
-        face = standing.crop((0, 0, width, 14)).resize((width * 2, 28), Image.Resampling.NEAREST)
+        face = face_crop(skin)
+        face = face.resize((face.width * 2, face.height * 2), Image.Resampling.NEAREST)
         canvas.alpha_composite(face, (x + (44 - face.width) // 2, y + 1))
         title, status, timer = details(session, session['name'] in seats, now)
         if timer:

@@ -1,5 +1,6 @@
 import { layout } from '../src/sessions.js';
 import { projectName, uniqueName } from './names.js';
+import { DEFAULT_CAST } from './characters.js';
 
 // Estado das sessões abertas, alimentado pelos eventos dos hooks.
 //
@@ -67,6 +68,7 @@ export function createState({
   homeOfficeRemoveAfterMs = HOME_OFFICE_REMOVE_AFTER_MS,
   alive = isAlive,
   saved = [],
+  cast = DEFAULT_CAST, // ids dos personagens que podem representar sessões
 }) {
   const sessions = new Map(); // session_id -> { name, status, since, pid }
   for (const { id, name, status, since, pid, agent } of saved) sessions.set(id, { name, status, since, pid, agent });
@@ -77,7 +79,7 @@ export function createState({
 
   function arrange() {
     const names = [...sessions.values()].filter((s) => s.status !== 'away').map((s) => s.name);
-    const result = layout(names, seatOrder, memory, placed);
+    const result = layout(names, seatOrder, memory, placed, cast);
     placed = { skins: result.skins, seats: result.seats };
     if (result.changed) onMemoryChange(memory);
   }

@@ -51,7 +51,7 @@
     ["cup:A", 0, 0],
     ["computerSide2", 74, 133],
     ["officeGrey", 177, 129],
-    ["p5", 179, 130],
+    ["boss:standing", 176, 127],
     ["tableLong", 165, 138],
     ["computerBack", 171, 136],
     ["mugCoffee", 186, 129, 1],

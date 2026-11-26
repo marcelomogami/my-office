@@ -16,11 +16,9 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 from session_panel import compose
-from sheets import crop, frame
+from sheets import BOSS, FACES, crop, frame, seated_at
 
 WIDTH, HEIGHT, SCALE = 478, 72, 2
-FIT = {'s0': (1, -3), 's1': (1, -4), 's2': (2, -1), 's3': (-1, -4),
-       's4': (-1, -4), 's5': (2, -1), 's6': (2, -1), 's7': (2, -1)}
 PAIR = [(151, 'officeBlue', 'officeGrey', 'stickies', 'flagBR'),
         (244, 'officeOrange', 'officeGreen', 'posterSun', 'doc1'),
         (337, 'officeYellow', 'officeWhite', 'posterBlue', 'flagUS')]
@@ -31,7 +29,7 @@ STATUSES = {'working': ('iconWork1', 'iconWork2', 'iconWork3'), 'done': ('iconDo
 def layout(sessions, previous=None):
     """Preserva lugares enquanto possível, dando prioridade às duas sessões fixas."""
     previous = previous or {}
-    candidates = [s for s in sessions if s.get('skin') in FIT and s.get('seat') and s.get('status') != 'away']
+    candidates = [s for s in sessions if s.get('skin') in FACES and s.get('seat') and s.get('status') != 'away']
     assigned, occupied = {}, set()
     for s in candidates:
         fixed = 4 if s['name'] == '~detran' else 5 if s['name'] == '~secretario' else None
@@ -97,12 +95,12 @@ def render(sessions, seats, phase=0, rest_seats=None):
             part = part.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
         im.alpha_composite(part, (x,y))
 
+    # Personagem sentado na cadeira em (x, y), pela regra única das células.
     def person(skin, x, y, flip=False):
-        dx, dy = FIT[skin]
-        w = frame(skin)[2]
-        px = x + 11 - dx - w if flip else x + dx
-        sprite(skin, px, y + dy, flip)
-        return px, y + dy, w
+        w = frame(f'{skin}:seated')[2]
+        px, py = seated_at(x, y, flip, w)
+        sprite(f'{skin}:seated', px, py, flip)
+        return px, py, w
 
     def bubble(anchor, status, bx):
         if status not in STATUSES:
@@ -122,8 +120,8 @@ def render(sessions, seats, phase=0, rest_seats=None):
     live = {s['name']: s for s in sessions}
     rest_seats = rest_seats if rest_seats is not None else rest_layout(sessions, seats)
     resting = {slot: live[name] for name, slot in rest_seats.items() if name in live}
-    if 0 in resting: sprite('p'+resting[0]['skin'][1:],22,20)
-    if 1 in resting: sprite('p'+resting[1]['skin'][1:],63,18,True)
+    if 0 in resting: sprite(resting[0]['skin']+':standing',20,19)
+    if 1 in resting: sprite(resting[1]['skin']+':standing',60,17,True)
     if 2 in resting: person(resting[2]['skin'],78,12)
     if 3 in resting: person(resting[3]['skin'],125,12,True)
     for item in [('tableSmall',95,4), ('boxGreen',92,0,True), ('mugCoffee',111,0)]: sprite(*item)
@@ -147,12 +145,12 @@ def render(sessions, seats, phase=0, rest_seats=None):
         sprite('partition',x,y+30)
     x,y=430,6
     for item in [('partitionSingle',x,y,True),('divider',x,y+5),('officeBlue',x+17,y+5,True),('desk',x+4,y+11,True)]: sprite(*item)
-    person('s5',x+22,y+7,True)
+    person(BOSS,x+22,y+7,True)
     for item in [('computerSide1',x-5,y+5,True),('mugCoffee',x+5,y+7),('partitionSingle',x,y+30,True),
                  ('plant',42,40),('sofaGreen',58,40)]: sprite(*item)
-    if 4 in resting: sprite('p'+resting[4]['skin'][1:],66,39)
+    if 4 in resting: sprite(resting[4]['skin']+':standing',64,38)
     sprite('sofaOrange',155,34)
-    if 5 in resting: sprite('p'+resting[5]['skin'][1:],163,33)
+    if 5 in resting: sprite(resting[5]['skin']+':standing',161,32)
     for item in [('plant',200,34),('plant',343,34),('cat',320,36),('binRed',386,34),
                  ('binBlue',259,34),('tableLong',270,34,True),('doc1',285,28),('printer',274,27),('dog',437,25,True)]: sprite(*item)
     for anchor,status,bx in anchors: bubble(anchor,status,bx)

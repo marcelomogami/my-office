@@ -1,24 +1,23 @@
 import { panelDetails, panelFace } from './panel.js';
-import { Application, Assets, Container, Graphics, Rectangle, Sprite, Texture } from 'pixi.js';
+import { Application, Container, Graphics, Rectangle, Sprite, Texture } from 'pixi.js';
 import './style.css';
-import sheetUrl from '../assets/pixel-office-2dpig/PixelOfficeAssetsNew2.png';
 import officeUrl from '../assets/office/default.png';
 import officeMap from '../assets/office/default.json';
 import uiUrl from '../assets/ui/default.png';
 import uiMap from '../assets/ui/default.json';
-import frames from './frames.json';
 import background from './background.json';
 import scene from './scene.json';
 import { createBubbles } from './bubbles.js';
 import { STATUS } from './status.js';
-import { layout, loadRemembered, saveRemembered, SKINS } from './sessions.js';
+import { layout, loadRemembered, saveRemembered } from './sessions.js';
+import { BOSS, castOf, seatedAt } from './characters.js';
 
 // Cena baseada no exemplo do 2dPig, sem o céu. A disposição está em
 // scene.json (dá para conferir com tools/compose_scene.py); este
 // arquivo só desenha. Coordenadas em pixels lógicos 1x; cada pixel lógico vira
-// U x U na tela. Móveis vêm de assets/office e balões e ícones de assets/ui,
-// folhas 1x mapeadas por célula; os personagens ainda vêm da folha antiga,
-// ampliada 5x (até a #6).
+// U x U na tela. Móveis vêm de assets/office, balões e ícones de assets/ui e
+// personagens do catálogo servido pelo backend (padrão + custom): folhas 1x,
+// mapeadas por célula.
 const U = 5;
 const { crop } = scene;
 
@@ -29,11 +28,7 @@ await app.init({ width: crop.width * U, height: crop.height * U, background: '#4
 app.ticker.maxFPS = 10;
 document.querySelector('#office').appendChild(app.canvas);
 
-const sheet = await Assets.load(sheetUrl);
-sheet.source.scaleMode = 'nearest';
-
-// Folhas 1x ampliadas U vezes ao carregar, para todas as texturas terem a
-// mesma escala da folha antiga.
+// Folhas 1x ampliadas U vezes ao carregar: cada pixel lógico vira U x U.
 async function loadSheet(url) {
   const img = new Image();
   img.src = url;
@@ -51,8 +46,23 @@ async function loadSheet(url) {
 const SHEETS = [
   { map: officeMap.items, source: await loadSheet(officeUrl) },
   { map: uiMap.items, source: await loadSheet(uiUrl) },
-  { map: frames, source: sheet.source },
 ];
+
+// Personagens: cada pose vira um sprite `id:seated` / `id:standing`.
+const { characters } = await (await fetch('/api/characters')).json();
+const CAST = castOf(characters);
+const characterById = new Map(characters.map((c) => [c.id, c]));
+const characterSources = new Map();
+for (const name of new Set(characters.map((c) => c.sheet))) {
+  const source = await loadSheet(`/api/characters/${name}.png`);
+  characterSources.set(name, source);
+  const map = {};
+  for (const c of characters.filter((x) => x.sheet === name)) {
+    map[`${c.id}:seated`] = c.seated;
+    map[`${c.id}:standing`] = c.standing;
+  }
+  SHEETS.push({ map, source });
+}
 
 const world = new Container();
 world.scale.set(U);
@@ -100,7 +110,7 @@ const texture = (name) => {
 // frente da cafeteira e do sofá, mas atrás das baias.
 // Gerente: Boss na mesa de chefe, só decoração. Aparece no quadro lateral
 // acima das sessões e no tooltip.
-const MANAGER = { skin: 's5', name: 'Boss', status: 'stress', bubbleX: 191, bubbleDY: 4 };
+const MANAGER = { skin: BOSS, name: 'Boss', status: 'stress', bubbleX: 191, bubbleDY: 7 };
 let managerSprite = null;
 const SEAT_ORDER = scene.seatOrder; // a fileira de cima está fora de uso por enquanto
 const slots = new Map(); // lugar -> Container
@@ -131,15 +141,15 @@ for (const [name, x, y, flip] of scene.items) {
     continue;
   }
   const sp = makeSprite(name, x, y, flip);
-  if (name === `p${MANAGER.skin.slice(1)}`) managerSprite = sp;
+  if (name === `${MANAGER.skin}:standing`) managerSprite = sp;
   world.addChild(sp);
 }
 
 // Cada skin tem o sprite sentado (entra no lugar da sessão) e o em pé (copa).
 const people = new Map();
-for (const id of Object.keys(SKINS)) {
-  const seated = new Sprite(texture(id));
-  const standing = new Sprite(texture(`p${id.slice(1)}`));
+for (const id of CAST) {
+  const seated = new Sprite(texture(`${id}:seated`));
+  const standing = new Sprite(texture(`${id}:standing`));
   for (const sp of [seated, standing]) {
     sp.scale.set(1 / U);
     sp.visible = false;
@@ -148,14 +158,13 @@ for (const id of Object.keys(SKINS)) {
   people.set(id, { seated, standing, anchor: null, idle: null });
 }
 
-// Põe a skin sentada numa cadeira ({ chair, flip }), encaixada pela regra
-// `fit`, dentro do contêiner que a coloca na ordem de desenho certa.
+// Põe a skin sentada numa cadeira ({ chair, flip }), pela regra única de
+// encaixe das células, dentro do contêiner que a coloca na ordem de desenho
+// certa.
 function sitOn(person, id, { chair, flip }, slot) {
-  const [dx, dy] = SKINS[id].fit;
-  const w = frames[id][2];
-  const x = flip ? chair[0] + 11 - dx - w : chair[0] + dx;
-  const y = chair[1] + dy;
   const sp = person.seated;
+  const w = sp.texture.width / U;
+  const { x, y } = seatedAt(chair[0], chair[1], flip, w);
   sp.scale.set(flip ? -1 / U : 1 / U, 1 / U);
   sp.position.set(flip ? x + w : x, y);
   slot.addChild(sp);
@@ -214,7 +223,7 @@ const bubbles = createBubbles({ world: bubbleLayer, texture, U, ticker: app.tick
 if (managerSprite) {
   const { x, y } = managerSprite;
   // balão ao lado da cabeça, um pouco mais baixo que o das baias
-  bubbles.set('manager', { x, y: y + MANAGER.bubbleDY, w: frames[`p${MANAGER.skin.slice(1)}`][2], bx: MANAGER.bubbleX }, MANAGER.status);
+  bubbles.set('manager', { x, y: y + MANAGER.bubbleDY, w: managerSprite.texture.width / U, bx: MANAGER.bubbleX }, MANAGER.status);
 }
 
 // Mostra a skin `id` no lugar `seatId` com o status pedido; sem lugar, some.
@@ -253,7 +262,7 @@ function arrange() {
     return;
   }
   const names = sessions.map((s) => s.name);
-  const result = layout(names, SEAT_ORDER, demoMemory, { skins: skinOf, seats: seatOf });
+  const result = layout(names, SEAT_ORDER, demoMemory, { skins: skinOf, seats: seatOf }, CAST);
   skinOf = result.skins;
   seatOf = result.seats;
   if (result.changed) {
@@ -293,19 +302,20 @@ function close(name) {
 }
 
 // ---------------------------------------------------------------- quadro lateral
-// Rosto de cada personagem, recortado da folha: as 14 primeiras linhas do
-// sprite em pé, a 3x. A folha é 5x, e cada bloco de 5 vira 3 pixels exatos.
-const sheetImage = sheet.source.resource;
-const FACE_ROWS = 14;
+// Rosto de cada personagem: o recorte `face` do catálogo, dentro da célula em
+// pé, a 3x. A folha carregada é U vezes maior, e cada bloco de U vira 3
+// pixels exatos.
 const FACE_SCALE = 3;
 function face(skin) {
   const c = document.createElement('canvas');
-  const [x, y, w] = frames[`p${skin.slice(1)}`];
+  const { sheet, standing, face: [fx, fy, w, h] } = characterById.get(skin);
+  const x = standing[0] + fx;
+  const y = standing[1] + fy;
   c.width = w * FACE_SCALE;
-  c.height = FACE_ROWS * FACE_SCALE;
+  c.height = h * FACE_SCALE;
   const ctx = c.getContext('2d');
   ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(sheetImage, x * U, y * U, w * U, FACE_ROWS * U, 0, 0, c.width, c.height);
+  ctx.drawImage(characterSources.get(sheet).resource, x * U, y * U, w * U, h * U, 0, 0, c.width, c.height);
   c.className = 'session-face';
   return c;
 }
@@ -335,7 +345,7 @@ function renderPanel() {
     ...sessions.map(({ name, status, since }) => {
       const seated = seatOf.has(name);
       const homeOffice = !seated && status !== 'away';
-      const skin = homeOffice ? panelFace(name, skinOf.get(name), homeFaces) : seated && skinOf.get(name);
+      const skin = homeOffice ? panelFace(name, skinOf.get(name), homeFaces, CAST) : seated && skinOf.get(name);
       const { title, text } = panelDetails(name, status, seated, since);
       return card(skin, title, text);
     }),
