@@ -11,9 +11,9 @@ PANEL_WIDTH, PANEL_HEIGHT = 1514, 148
 FIXED_FACES = {'~detran': 's7', '~secretario': 's6', '~secretario-dev': 's3', 'chat-ferramentas': 's0'}
 FACES = ('s0', 's1', 's2', 's3', 's4', 's6', 's7')
 LABELS = {'working': 'trabalhando', 'done': 'pronto', 'idle': 'descansando',
-          'away': 'foi embora', 'error': 'erro', 'quota': 'cota acabou', 'stress': 'stress...'}
+          'away': 'foi embora', 'error': 'erro', 'quota': 'cota acabou'}
 ICONS = {'working': 'iconWork3', 'done': 'iconDone', 'idle': 'mugCoffee',
-         'away': 'mugCoffee', 'error': 'iconError', 'quota': 'iconQuota', 'stress': 'iconStress'}
+         'away': 'mugCoffee', 'error': 'iconError', 'quota': 'iconQuota'}
 
 
 def font(size, bold=False):
@@ -38,7 +38,7 @@ def details(session, seated, now):
     name = session['name']
     status = session.get('status', 'working')
     if session.get('_boss'):
-        return name, status, ''
+        return name, None, ''
     home = not seated and status != 'away'
     shown = 'done' if home and status == 'idle' else status
     title = f'{name} (home office)' if home else name
@@ -63,7 +63,7 @@ def face_for(session):
 
 def panel_entries(sessions):
     """O Boss ocupa o primeiro cartão, seguido por até oito sessões."""
-    return [{'name': 'Boss', 'skin': 's5', 'status': 'stress', '_boss': True}, *sessions[:8]]
+    return [{'name': 'Boss', 'skin': 's5', '_boss': True}, *sessions[:8]]
 
 
 def compose(room, sessions, seats, sheet, frames, now=None):
@@ -86,6 +86,8 @@ def compose(room, sessions, seats, sheet, frames, now=None):
             tw = draw.textlength(timer, font=SMALL)
             draw.text((x + (44 - tw) / 2, y + 29), timer, font=SMALL, fill='#a5b7bc')
         draw.text((x + 44, y + 5), fit_text(draw, title, BOLD, 133), font=BOLD, fill='#e8eff1')
+        if session.get('_boss'):
+            continue
         icon_name = ICONS.get(status, 'iconWork3')
         ix, iy, iw, ih = frames[icon_name]
         icon = sheet.crop((ix, iy, ix + iw, iy + ih))

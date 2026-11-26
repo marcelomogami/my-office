@@ -49,7 +49,7 @@ class OfficeTest(unittest.TestCase):
         entries = panel_entries(sessions)
         self.assertEqual([s['name'] for s in entries], ['Boss'] + [str(i) for i in range(8)])
         self.assertEqual(face_for(entries[0]), 's5')
-        self.assertEqual(details(entries[0], False, 0), ('Boss', 'stress', ''))
+        self.assertEqual(details(entries[0], False, 0), ('Boss', None, ''))
         self.assertEqual(panel_entries([])[0]['name'], 'Boss')
 
     def test_home_office_face_is_stable(self):
