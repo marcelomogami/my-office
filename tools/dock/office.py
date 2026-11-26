@@ -15,6 +15,8 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
+from session_panel import compose
+
 ROOT = Path(__file__).resolve().parents[2]
 FRAMES = json.loads((ROOT / 'tools/dock/frames.json').read_text())
 SHEET = Image.open(ROOT / 'assets/pixel-office-2dpig/PixelOfficeAssetsNew3.png').convert('RGBA')
@@ -156,7 +158,8 @@ def render(sessions, seats, phase=0, rest_seats=None):
     for item in [('plant',200,39),('plant',343,39),('cat',320,53),('binRed',386,44),
                  ('binBlue',259,44),('tableLong',270,42,True),('doc1',285,44),('printer',274,42),('dog',443,44,True)]: sprite(*item)
     for anchor,status,bx in anchors: bubble(anchor,status,bx)
-    return im.resize((WIDTH*SCALE,HEIGHT*SCALE), Image.Resampling.NEAREST)
+    room = im.resize((WIDTH*SCALE, HEIGHT*SCALE), Image.Resampling.NEAREST)
+    return compose(room, sessions, seats, SHEET, FRAMES)
 
 
 def stream(url, events):
@@ -205,6 +208,7 @@ def main():
     sys.stdout.write('\x1b[?25l\x1b[2J')
     try:
         needs_redraw = True
+        last_timers = None
         while True:
             projected = [dict(s, status='idle') if args.test_idle_seconds is not None
                          and s.get('status') == 'done' and isinstance(s.get('since'), (int, float))
@@ -215,9 +219,15 @@ def main():
                 seats = layout(sessions, seats)
                 rest_seats = rest_layout(sessions, seats, rest_seats)
                 needs_redraw = True
-            if needs_redraw or any(s.get('status') == 'working' for s in sessions):
+            now_ms = time.time() * 1000
+            timers = tuple((s['name'], int(max(0, now_ms - s['since']) // 60000))
+                           for s in sessions if s.get('name') in seats
+                           and s.get('status') in ('done', 'idle', 'error', 'quota')
+                           and isinstance(s.get('since'), (int, float)))
+            if needs_redraw or timers != last_timers or any(s.get('status') == 'working' for s in sessions):
                 send_image(render(sessions, seats, phase, rest_seats))
                 needs_redraw = False
+                last_timers = timers
                 phase += 1
             try:
                 raw_sessions = events.get(timeout=.4)

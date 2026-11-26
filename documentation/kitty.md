@@ -13,7 +13,7 @@ O escritório 1 e o dock podem receber o mesmo stream simultaneamente. Não é n
 
 ## Como o desenho chega ao Kitty
 
-O programa Python usa Pillow para compor a imagem em memória a partir da folha e dos objetos da sala. A cena mede 478 × 72 pixels lógicos e é ampliada sem suavização para 956 × 144 pixels. O programa codifica o quadro em PNG e o envia ao terminal pelo protocolo gráfico do Kitty.
+O programa Python usa Pillow para compor a imagem em memória a partir da folha e dos objetos da sala. A sala mede 478 × 72 pixels lógicos e é ampliada sem suavização para 956 × 144 pixels; com a margem e a lista, o quadro completo mede 1514 × 148 pixels. O programa codifica o quadro em PNG e o envia ao terminal pelo protocolo gráfico do Kitty.
 
 O backend envia a lista atual na conexão e novamente quando há mudanças. O renderizador atualiza a imagem ao receber uma lista nova. Enquanto há uma sessão trabalhando, ele também atualiza os pontos do balão aproximadamente a cada 400 ms; sem alterações ou animação de trabalho, a imagem fica parada.
 
@@ -47,7 +47,7 @@ Quando uma sessão entra em `idle`, o dock escolhe aleatoriamente um dos seis lu
 
 O prazo normal para entrar em descanso pertence ao backend, atualmente dez minutos. Para uma demonstração temporária somente no dock, adicione `--test-idle-seconds 10` ao comando do renderizador. A opção antecipa visualmente o descanso de sessões `done`, sem alterar o backend nem o escritório 1. Não a use no atalho normal.
 
-A lista de sessões do escritório 2 ainda não foi implementada. O prazo de teste e os nomes de sessões não substituem os indicadores de status mantidos pelo backend.
+A lista mostra até nove sessões, em três colunas de três cartões, com avatar, nome e status. O fundo ao redor da sala e dos cartões é transparente, permitindo ver o tema do Kitty. O tempo aparece abaixo do avatar para sessões com lugar na sala; quem está em home office não exibe esse tempo. O prazo de teste não altera os indicadores de status mantidos pelo backend.
 
 ## Testes
 
