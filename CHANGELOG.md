@@ -4,7 +4,7 @@ Notable changes are grouped by published version. Complete release notes are als
 
 ## Unreleased
 
-- Sessions with an error move to a rest area after 10 minutes without activity, like finished sessions, instead of keeping the error bubble for up to 4 hours.
+- Sessions with an error or quota bubble follow the same rules as finished sessions: they rest after 10 minutes without activity, leave the room after 4 hours and the list after 8 hours, instead of keeping the bubble at the desk for up to 4 hours.
 - Runs backend tests, dock tests and the web build on GitHub Actions for every push and pull request.
 
 ## [0.7.1](https://github.com/marcelomogami/my-office/releases/tag/v0.7.1)

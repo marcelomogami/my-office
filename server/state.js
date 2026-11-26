@@ -33,9 +33,9 @@ const STATUS_OF = {
 // Tipos de erro do StopFailure que querem dizer "acabou a cota".
 const QUOTA_ERRORS = new Set(['rate_limit', 'billing_error']);
 
-// Status que vão descansar depois de `idleAfterMs` sem evento: pronto e erro.
-// A cota fica à vista na baia até a sessão voltar a agir.
-const CAN_REST = new Set(['done', 'error']);
+// Status que vão descansar depois de `idleAfterMs` sem evento: pronto, erro e
+// cota seguem a mesma regra (descansa, vai embora, sai da lista).
+const CAN_REST = new Set(['done', 'error', 'quota']);
 
 // Status que, sem evento por `awayAfterMs`, vão embora da sala.
 const CAN_LEAVE = new Set(['idle', 'error', 'quota']);
@@ -111,7 +111,7 @@ export function createState({
     return isNew || agentChanged || before !== status || (status !== 'working' && previousSince !== s.since);
   }
 
-  // "Pronto" ou erro há mais de `idleAfterMs` vira ocioso, ocioso há mais de
+  // Pronto, erro ou cota há mais de `idleAfterMs` vira ocioso, ocioso há mais de
   // `awayAfterMs` (desde o último evento) vai embora, e sessão cujo processo
   // morreu sai de vez; devolve true se algo mudou.
   function tick() {
