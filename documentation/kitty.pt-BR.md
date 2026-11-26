@@ -32,12 +32,14 @@ python3 -c 'import PIL; print(PIL.__version__)'
 Dentro de uma ação do Kitty, use o caminho absoluto do renderizador, substituindo `/caminho/para/my-office` pelo diretório do projeto:
 
 ```text
-launch --type=os-window-dock --title=my-office-dock --focus-existing=@title --dock-edge=bottom --dock-size=9 --dock-skip-focus --keep-focus /usr/bin/python3 /caminho/para/my-office/tools/dock/office.py
+launch --type=os-window-dock --title=my-office-dock --focus-existing=@title --dock-edge=bottom --dock-size=8 --dock-skip-focus --keep-focus /usr/bin/python3 /caminho/para/my-office/tools/dock/office.py
 ```
 
 Essa é uma ação `launch` do Kitty, adequada a um `map` em `kitty.conf`, não um comando de shell isolado. O dock inferior pertence à janela do Kitty, aparece ao trocar de aba e fecha quando essa janela fecha. `--dock-skip-focus` impede que receba foco; `--keep-focus` mantém o foco no terminal atual. O título com `--focus-existing=@title` permite reaproveitar o dock já existente na janela. As mesmas opções de reaproveitamento podem ser usadas com `--type=tab` e `--tab-title` para evitar abas com título duplicado.
 
-A altura `9` é medida em linhas do terminal, não em pixels. Ajuste conforme a fonte, bordas e tamanho da janela. Com abas laterais nativas, o dock ocupa a área de terminal à direita da barra, não a largura completa da janela. Em uma área mais estreita que a imagem, o Kitty pode cortar parte do desenho.
+A altura `8` é medida em linhas do terminal, não em pixels. A imagem do dock tem 148 pixels de altura e é desenhada a partir do topo, então use o menor número de linhas em que ela caiba: divida 148 pela altura de uma linha e arredonde para cima. Com linhas de 20 pixels, `8` linhas dão 160 pixels e sobram 12 pixels abaixo da imagem; com `7`, ela seria cortada. O Kitty também aceita uma porcentagem da janela (por exemplo `15%`), que permite ajuste mais fino, mas muda com o tamanho da janela.
+
+Com abas laterais nativas, o dock ocupa a área de terminal à direita da barra, não a largura completa da janela. Em uma área mais estreita que a imagem, o Kitty pode cortar parte do desenho.
 
 Não inclua uma ação de fechamento automático da aba atual se o atalho puder ser repetido em uma aba de trabalho. A configuração global e os atalhos pertencem ao usuário; o projeto não os altera automaticamente.
 

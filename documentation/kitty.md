@@ -32,12 +32,14 @@ python3 -c 'import PIL; print(PIL.__version__)'
 In a Kitty action, use the renderer's absolute path, replacing `/path/to/my-office` with the repository directory:
 
 ```text
-launch --type=os-window-dock --title=my-office-dock --focus-existing=@title --dock-edge=bottom --dock-size=9 --dock-skip-focus --keep-focus /usr/bin/python3 /path/to/my-office/tools/dock/office.py
+launch --type=os-window-dock --title=my-office-dock --focus-existing=@title --dock-edge=bottom --dock-size=8 --dock-skip-focus --keep-focus /usr/bin/python3 /path/to/my-office/tools/dock/office.py
 ```
 
 This is a Kitty `launch` action suitable for a `map` in `kitty.conf`, not a standalone shell command. The bottom dock belongs to the Kitty window, stays visible when switching tabs, and closes when that window closes. `--dock-skip-focus` prevents it from receiving focus; `--keep-focus` keeps focus in the current terminal. The title and `--focus-existing=@title` allow an existing dock in the window to be reused. The same reuse option can be used with `--type=tab` and `--tab-title` to avoid duplicate titled tabs.
 
-The height `9` is measured in terminal rows, not pixels. Adjust it for the font, borders, and window size. With Kitty's native sidebar tabs, the dock occupies the terminal area to their right, not the full window width. If the available area is narrower than the image, Kitty may crop part of the drawing.
+The height `8` is measured in terminal rows, not pixels. The dock image is 148 pixels tall and is drawn from the top, so use the smallest number of rows that fits it: divide 148 by the height of one row and round up. With 20-pixel rows, `8` rows give 160 pixels, leaving 12 pixels below the image; `7` would crop it. Kitty also accepts a percentage of the window (for example `15%`), which allows finer adjustment but changes with the window size.
+
+With Kitty's native sidebar tabs, the dock occupies the terminal area to their right, not the full window width. If the available area is narrower than the image, Kitty may crop part of the drawing.
 
 Do not automatically close the active tab in a shortcut that may be repeated from a working tab. Global configuration and shortcuts belong to the user; the project does not change them automatically.
 
