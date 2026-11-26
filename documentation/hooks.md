@@ -227,7 +227,7 @@ Add the entries below to `~/.codex/hooks.json`, or `$CODEX_HOME/hooks.json` when
 
 Review and trust new or changed Codex hook definitions before use. In the CLI, use `/hooks`; in the app, use the available hook review interface. Event formats and availability depend on the version: see the [Codex hooks documentation](https://developers.openai.com/codex/hooks/).
 
-`PreModelRequest` signals work, and `PostModelRequest` with a failed result signals an error. A subsequent attempt returns the session to working. Specific Codex quota detection is not yet available. `Interrupt` marks the session as finished and `SessionEnd` removes it when received.
+`PreModelRequest` signals work, and `PostModelRequest` with a failed result signals an error. A subsequent attempt returns the session to working. When the failure message is one of the messages Codex uses for exhausted usage (usage limit, quota, credits, spend cap or spend limit), the script sends a quota event instead; the message itself is read locally and never sent. This relies on Codex's English messages and may need updating if they change. `Interrupt` marks the session as finished and `SessionEnd` removes it when received.
 
 To identify some exits without `SessionEnd`, the backend queries loaded session identifiers from the local Codex App Server, by default at `ws://127.0.0.1:8767`; `MY_OFFICE_CODEX_WS` changes the address. It removes only sessions previously confirmed on that server and missing in two consecutive queries. If the server is unavailable or a session was never confirmed there, this check cannot establish that it ended; inactivity rules still apply.
 

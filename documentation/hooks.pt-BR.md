@@ -227,7 +227,7 @@ Adicione as entradas abaixo a `~/.codex/hooks.json`, ou a `$CODEX_HOME/hooks.jso
 
 No Codex, revise e confie nas definições novas ou alteradas antes do uso. Na CLI, use `/hooks`; no aplicativo, consulte a revisão de hooks disponível na interface. O formato e a disponibilidade dos eventos dependem da versão: veja a [documentação de hooks do Codex](https://developers.openai.com/codex/hooks/).
 
-`PreModelRequest` indica trabalho e `PostModelRequest` com resultado de falha indica erro. Uma tentativa posterior volta ao estado trabalhando. A identificação específica de cota do Codex ainda não está disponível. `Interrupt` indica pronto e `SessionEnd` remove a sessão quando esse evento é recebido.
+`PreModelRequest` indica trabalho e `PostModelRequest` com resultado de falha indica erro. Uma tentativa posterior volta ao estado trabalhando. Quando a mensagem da falha é uma das que o Codex usa para uso esgotado (limite de uso, cota, créditos, teto ou limite de gasto), o script envia um evento de cota; a mensagem é lida localmente e nunca é enviada. Isso depende das mensagens em inglês do Codex e pode precisar de ajuste se elas mudarem. `Interrupt` indica pronto e `SessionEnd` remove a sessão quando esse evento é recebido.
 
 Para identificar algumas saídas sem `SessionEnd`, o backend consulta os identificadores de sessões carregadas no Codex App Server local, por padrão em `ws://127.0.0.1:8767`; `MY_OFFICE_CODEX_WS` altera o endereço. Ele remove somente sessões que já foram confirmadas naquele servidor e estão ausentes em duas consultas. Se o servidor estiver indisponível ou a sessão nunca tiver sido confirmada nele, essa verificação não prova que ela terminou; continuam valendo as regras de inatividade.
 

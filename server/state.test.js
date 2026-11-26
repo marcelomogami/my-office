@@ -284,3 +284,11 @@ test('identificação de Codex sobrevive ao snapshot', () => {
   const again = setup({ saved: first.state.snapshot() });
   assert.equal(again.state.codexCandidates().has('a'), true);
 });
+
+test('cota do Codex reconhecida pelo hook mostra cota e nova tentativa retoma trabalho', () => {
+  const { state, ev } = setup();
+  ev('a', 'CodexQuotaExceeded');
+  assert.equal(state.list()[0].status, 'quota');
+  ev('a', 'CodexModelStarted');
+  assert.equal(state.list()[0].status, 'working');
+});

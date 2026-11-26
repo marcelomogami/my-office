@@ -4,6 +4,7 @@ Notable changes are grouped by published version. Complete release notes are als
 
 ## Unreleased
 
+- Codex sessions that run out of usage show the quota status instead of a generic error. The hook recognizes Codex's usage-limit messages locally and sends only the event name.
 - Runs backend tests, dock tests and the web build on GitHub Actions for every push and pull request.
 
 ## [0.7.1](https://github.com/marcelomogami/my-office/releases/tag/v0.7.1)
