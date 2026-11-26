@@ -43,7 +43,7 @@ Do not automatically close the active tab in a shortcut that may be repeated fro
 
 ## Sessions and rest
 
-The backend determines statuses and sends the skin and Office 1 position. The dock assigns its own visual positions for six sessions. The right-hand pair gives priority to `~detran` (custom2) and `~secretario` (custom1); the other positions are available to other sessions. Boss always appears at the individual workstation as the boss. Sessions without a backend workstation or with `away` status are not drawn in the room.
+The backend determines statuses and sends the skin and Office 1 position. The dock assigns its own visual positions for six sessions. The right-hand pair gives priority to `~detran` (custom2) and `~secretario` (custom1); the other positions are available to other sessions. The Boss always appears at the individual workstation. Sessions without a backend workstation or with `away` status are not drawn in the room.
 
 When a session becomes `idle`, the dock randomly selects one of the six free rest positions and keeps it until the session leaves that state. The next rest gets a new selection. Bubbles represent `working`, `done`, `error`, and `quota`.
 

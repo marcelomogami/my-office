@@ -12,7 +12,7 @@ Notable changes are grouped by published version. Complete release notes are als
 
 - Compact office in a bottom Kitty dock, sharing the backend with the original web page.
 - Python renderer using Pillow, reorganized sprite sheet, and layout preview.
-- Six session workstations, one workstation for Boss, and six rest positions; custom1 and custom2 have fixed positions.
+- Six session workstations, one workstation for the Boss, and six rest positions; custom1 and custom2 have fixed positions.
 
 ## [0.5.0](https://github.com/marcelomogami/my-office/releases/tag/v0.5.0)
 
