@@ -1,0 +1,7 @@
+{
+  "projects": {
+    "my-api": {"character": "char2", "desk": 1},
+    "website": {"character": "char4", "desk": 2},
+    "notes": {"character": "char6"}
+  }
+}

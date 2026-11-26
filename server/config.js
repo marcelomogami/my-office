@@ -1,0 +1,79 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { CONFIG_DIR } from './characters.js';
+
+// Configuração local (config.json na pasta de configuração, a mesma dos
+// personagens custom), fora do repositório. Hoje ela só diz quais projetos
+// têm personagem e baia fixos:
+//
+//   { "projects": { "<projeto>": { "character": "<id>", "desk": <número> } } }
+//
+// `character` e `desk` são opcionais. O resultado é o mapa de sessões fixas
+// de src/sessions.js: { projeto: { skin, seat } }, com a baia como texto
+// ("1" a "6", os ids de src/scene.json). Entradas inválidas são descartadas
+// com uma mensagem em `log`; o resto da configuração continua valendo.
+
+export function parseConfig(data, { cast, desks, log = console.error, file = 'config.json' }) {
+  const fixed = {};
+  const warn = (msg) => log(`my-office: ${file}: ${msg}`);
+  if (data === null || typeof data !== 'object' || Array.isArray(data)) {
+    warn('o arquivo precisa ser um objeto JSON; configuração ignorada');
+    return fixed;
+  }
+  const projects = data.projects ?? {};
+  if (typeof projects !== 'object' || Array.isArray(projects)) {
+    warn('"projects" precisa ser um objeto; configuração ignorada');
+    return fixed;
+  }
+  const owner = { skin: new Map(), seat: new Map() };
+  for (const [name, entry] of Object.entries(projects)) {
+    if (entry === null || typeof entry !== 'object' || Array.isArray(entry)) {
+      warn(`projeto "${name}": a entrada precisa ser um objeto; ignorada`);
+      continue;
+    }
+    const item = {};
+    if (entry.character !== undefined) {
+      if (!cast.includes(entry.character)) {
+        warn(`projeto "${name}": personagem desconhecido "${entry.character}" (disponíveis: ${cast.join(', ')}); ignorado`);
+      } else if (owner.skin.has(entry.character)) {
+        warn(`projeto "${name}": o personagem "${entry.character}" já é do projeto "${owner.skin.get(entry.character)}"; ignorado`);
+      } else {
+        item.skin = entry.character;
+        owner.skin.set(entry.character, name);
+      }
+    }
+    if (entry.desk !== undefined) {
+      const seat = String(entry.desk);
+      if (!Number.isInteger(entry.desk) || !desks.includes(seat)) {
+        warn(`projeto "${name}": baia desconhecida ${JSON.stringify(entry.desk)} (use um número de ${desks[0]} a ${desks.at(-1)}); ignorada`);
+      } else if (owner.seat.has(seat)) {
+        warn(`projeto "${name}": a baia ${seat} já é do projeto "${owner.seat.get(seat)}"; ignorada`);
+      } else {
+        item.seat = seat;
+        owner.seat.set(seat, name);
+      }
+    }
+    if (item.skin || item.seat) fixed[name] = item;
+  }
+  return fixed;
+}
+
+// Lê <configDir>/config.json. Sem arquivo, não há sessões fixas.
+export function loadConfig({ configDir = CONFIG_DIR, cast, desks, log = console.error }) {
+  const file = join(configDir, 'config.json');
+  let text;
+  try {
+    text = readFileSync(file, 'utf8');
+  } catch (err) {
+    if (err.code !== 'ENOENT') log(`my-office: não deu para ler ${file}: ${err.message}`);
+    return {};
+  }
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch (err) {
+    log(`my-office: ${file}: JSON inválido (${err.message}); configuração ignorada`);
+    return {};
+  }
+  return parseConfig(data, { cast, desks, log, file });
+}

@@ -44,7 +44,7 @@ Não inclua uma ação de fechamento automático da aba atual se o atalho puder 
 
 ## Sessões e descanso
 
-O backend determina os status e envia a skin e o lugar do escritório 1. O dock faz sua própria distribuição visual das seis baias para sessões. A dupla da direita dá prioridade a `~detran` (custom2) e `~secretario` (custom1); as demais posições ficam disponíveis para outras sessões. O Boss aparece sempre na baia individual. Sessões sem baia no backend ou com status `away` não são desenhadas na sala.
+O backend determina os status e envia o personagem, a baia e o rosto da lista de cada sessão, incluindo os [projetos fixos](../README.pt-BR.md#projetos-fixos). O dock usa a mesma numeração de baias da página web, da 1, ao lado do Boss, à 6, na ponta esquerda. O Boss aparece sempre na baia individual. Sessões sem baia no backend ou com status `away` não são desenhadas na sala.
 
 Quando uma sessão entra em `idle`, o dock escolhe aleatoriamente um dos seis lugares livres de descanso e mantém esse lugar até a sessão sair desse estado. No próximo descanso há novo sorteio. Os balões representam `working`, `done`, `error` e `quota`.
 

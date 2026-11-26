@@ -3,19 +3,15 @@ from office import layout, render, rest_layout
 from session_panel import details, face_for, panel_entries
 
 
-def session(name, skin, status='working', seat='G'):
-    return {'name': name, 'skin': skin, 'status': status, 'seat': seat}
+def session(name, skin, status='working', seat='6', face=None):
+    return {'name': name, 'skin': skin, 'status': status, 'seat': seat, 'face': face}
 
 
 class OfficeTest(unittest.TestCase):
-    def test_fixed_places_preempt_borrowed_and_keep_other_places(self):
-        others = [session('a', 'char1'), session('b', 'char2'), session('c', 'char3'), session('d', 'char4'), session('e', 'char5')]
-        first = layout(others)
-        self.assertEqual(first['e'], 4)
-        second = layout(others + [session('~detran', 'char6')], first)
-        self.assertEqual(second['~detran'], 4)
-        self.assertEqual([second[n] for n in 'abcd'], [0, 1, 2, 3])
-        self.assertEqual(second['e'], 5)
+    def test_desks_follow_the_backend_numbering(self):
+        items = [session(str(n), 'char1', seat=str(n)) for n in range(1, 7)]
+        self.assertEqual(layout(items), {'1': 5, '2': 4, '3': 3, '4': 2, '5': 1, '6': 0})
+        self.assertEqual(layout([session('a', 'char1', seat='A')]), {})
 
     def test_away_and_home_office_are_not_drawn(self):
         items = [session('a', 'char1', 'away'), session('b', 'char2', seat=None)]
@@ -29,7 +25,7 @@ class OfficeTest(unittest.TestCase):
         class LastChoice:
             @staticmethod
             def choice(options): return options[-1]
-        resting = [session('a', 'char1', 'idle'), session('b', 'char2', 'idle')]
+        resting = [session('a', 'char1', 'idle', '6'), session('b', 'char2', 'idle', '5')]
         seats = layout(resting)
         positions = rest_layout(resting, seats, rng=LastChoice())
         self.assertEqual(positions, {'a': 5, 'b': 4})
@@ -55,7 +51,7 @@ class OfficeTest(unittest.TestCase):
     def test_home_office_face_is_stable(self):
         s = session('projeto', None, seat=None)
         self.assertEqual(face_for(s), face_for(s))
-        self.assertEqual(face_for(session('chat-ferramentas', None, seat=None)), 'char1')
+        self.assertEqual(face_for(session('projeto', None, seat=None, face='char3')), 'char3')
 
     def test_working_and_resting_draw_different_scenes(self):
         working = [session('a','char1')]

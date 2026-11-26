@@ -3,10 +3,16 @@ import assert from 'node:assert/strict';
 import { homedir } from 'node:os';
 import { createState } from './state.js';
 
-const ORDER = ['G', 'H', 'F', 'I', 'D', 'E'];
+const ORDER = ['1', '2', '3', '4', '5', '6'];
 const P = `${homedir()}/projects`;
 // Catálogo padrão mais dois personagens custom, como na máquina do Boss.
 const CAST = ['char1', 'char2', 'char3', 'char4', 'char5', 'char6', 'custom1', 'custom2'];
+// Sessões fixas como as que a configuração local produz (server/config.js).
+const FIXED = {
+  'fixo-a': { skin: 'custom2', seat: '1' },
+  'fixo-b': { skin: 'custom1', seat: '2' },
+  'fixo-c': { skin: 'char5' },
+};
 
 function setup({ dead = new Set(), saved = [] } = {}) {
   let t = 0;
@@ -14,7 +20,7 @@ function setup({ dead = new Set(), saved = [] } = {}) {
   let saves = 0;
   const state = createState({
     seatOrder: ORDER, memory, onMemoryChange: () => saves++, now: () => t, idleAfterMs: 1000,
-    alive: (pid) => !dead.has(pid), saved, awayAfterMs: 5000, cast: CAST,
+    alive: (pid) => !dead.has(pid), saved, awayAfterMs: 5000, cast: CAST, fixed: FIXED,
   });
   const ev = (id, event, cwd = `${P}/personal/my-office`) => state.event({ session_id: id, cwd, event });
   return { state, ev, memory, dead, advance: (ms) => (t += ms), saves: () => saves };
@@ -36,7 +42,7 @@ test('ciclo de vida: entra, trabalha, pronto, ocioso, vai embora ao fechar', () 
   assert.equal(ev('a', 'UserPromptSubmit'), true);
   assert.equal(state.list()[0].status, 'working');
   assert.equal(ev('a', 'SessionEnd'), true);
-  assert.deepEqual(state.list(), [{ name: 'my-office', status: 'away', since: 1000, skin: null, seat: null }]);
+  assert.deepEqual(state.list(), [{ name: 'my-office', status: 'away', since: 1000, skin: null, seat: null, face: null }]);
   assert.equal(ev('a', 'SessionEnd'), false);
 });
 
@@ -69,29 +75,30 @@ test('sessão que aparece no meio (sem SessionStart) entra mesmo assim', () => {
 
 test('nomes, skins fixas e baias fixas', () => {
   const { state, ev, memory, saves } = setup();
-  ev('1', 'SessionStart', `${P}/MTI/detran`);
+  ev('1', 'SessionStart', `${P}/work/fixo-a/sub`);
   ev('2', 'SessionStart', `${P}/personal/my-office`);
   ev('3', 'SessionStart', `${P}/personal/my-office/src`);
-  const [detran, a, b] = state.list();
-  assert.deepEqual([detran.name, detran.skin, detran.seat], ['~detran', 'custom2', 'I']);
+  const [fixo, a, b] = state.list();
+  assert.deepEqual([fixo.name, fixo.skin, fixo.seat, fixo.face], ['fixo-a', 'custom2', '1', 'custom2']);
   assert.equal(a.name, 'my-office');
   assert.equal(b.name, 'my-office (2)');
   assert.notEqual(a.skin, b.skin);
   assert.ok(saves() > 0);
-  assert.equal(memory.skins.has('~detran'), false); // fixa não vai para a memória
+  assert.equal(memory.skins.has('fixo-a'), false); // fixa não vai para a memória
+  assert.ok(!['1', '2'].includes(a.seat) && !['1', '2'].includes(b.seat)); // baias fixas ficam livres
   assert.equal(memory.seats.get('my-office'), a.seat);
 });
 
-test('personagem fixo que não existe no catálogo entra no sorteio', () => {
-  const state = createState({ seatOrder: ORDER, memory: { skins: new Map(), seats: new Map() }, cast: ['char1', 'char2'] });
-  state.event({ session_id: '1', cwd: `${P}/MTI/detran`, event: 'SessionStart' });
-  const [detran] = state.list();
-  assert.ok(['char1', 'char2'].includes(detran.skin));
-  assert.equal(detran.seat, 'I');
+test('sessão fixa só com baia ganha personagem sorteado', () => {
+  const state = createState({ seatOrder: ORDER, memory: { skins: new Map(), seats: new Map() }, cast: ['char1', 'char2'], fixed: { 'fixo-a': { seat: '1' } } });
+  state.event({ session_id: '1', cwd: `${P}/work/fixo-a`, event: 'SessionStart' });
+  const [fixo] = state.list();
+  assert.ok(['char1', 'char2'].includes(fixo.skin));
+  assert.equal(fixo.seat, '1');
 });
 
 test('personagens fixos não entram no sorteio; acabando os livres, repete', () => {
-  const state = createState({ seatOrder: ORDER, memory: { skins: new Map([['velha', 'custom2']]), seats: new Map() }, cast: ['char1', 'char2', 'char3', 'char5', 'custom1', 'custom2'] });
+  const state = createState({ seatOrder: ORDER, memory: { skins: new Map([['velha', 'custom2']]), seats: new Map() }, cast: ['char1', 'char2', 'char3', 'char5', 'custom1', 'custom2'], fixed: { ...FIXED, 'fixo-d': { skin: 'char1' } } });
   const open = (name) => state.event({ session_id: name, cwd: `${P}/${name}`, event: 'SessionStart' });
   open('velha');
   open('outra');
@@ -101,7 +108,7 @@ test('personagens fixos não entram no sorteio; acabando os livres, repete', () 
 });
 
 test('com todos os personagens fixos, o sorteio usa o elenco inteiro', () => {
-  const state = createState({ seatOrder: ORDER, memory: { skins: new Map(), seats: new Map() }, cast: ['char1', 'char5'] });
+  const state = createState({ seatOrder: ORDER, memory: { skins: new Map(), seats: new Map() }, cast: ['char1', 'char5'], fixed: { 'fixo-c': { skin: 'char5' }, 'fixo-d': { skin: 'char1' } } });
   state.event({ session_id: '1', cwd: `${P}/qualquer`, event: 'SessionStart' });
   assert.ok(['char1', 'char5'].includes(state.list()[0].skin));
 });
@@ -143,19 +150,19 @@ test('sessão cujo processo morreu vai embora no tick e continua na lista', () =
   assert.equal(state.tick(), false);
   dead.add(111);
   assert.equal(state.tick(), true);
-  assert.deepEqual(state.list().map((s) => [s.name, s.status, s.seat]), [['a', 'away', null], ['b', 'done', 'H']]);
+  assert.deepEqual(state.list().map((s) => [s.name, s.status, s.seat]), [['a', 'away', null], ['b', 'done', '4']]);
   assert.equal(state.tick(), false);
 });
 
 test('snapshot volta num estado novo, com as sessões mortas já fora da sala', () => {
   const first = setup();
-  first.state.event({ session_id: 'a', cwd: `${P}/MTI/secretario`, event: 'Stop', pid: 111 });
+  first.state.event({ session_id: 'a', cwd: `${P}/work/fixo-b`, event: 'Stop', pid: 111 });
   first.state.event({ session_id: 'b', cwd: `${P}/personal/b`, event: 'UserPromptSubmit', pid: 222 });
   const saved = first.state.snapshot();
   const again = setup({ saved, dead: new Set([222]) });
   assert.deepEqual(again.state.list(), [
-    { name: '~secretario', status: 'done', since: 0, skin: 'custom1', seat: 'F' },
-    { name: 'b', status: 'away', since: 0, skin: null, seat: null },
+    { name: 'fixo-b', status: 'done', since: 0, skin: 'custom1', seat: '2', face: 'custom1' },
+    { name: 'b', status: 'away', since: 0, skin: null, seat: null, face: null },
   ]);
   again.advance(1000);
   again.state.tick();
@@ -176,7 +183,7 @@ test('4 horas (aqui, 5 s) sem evento: vai embora, libera a baia e volta ao agir'
   ev('b', 'UserPromptSubmit', `${P}/personal/outro`); // b continua ativo
   assert.equal(state.tick(), true);
   const [a, b] = state.list();
-  assert.deepEqual(a, { name: 'my-office', status: 'away', since: 0, skin: null, seat: null });
+  assert.deepEqual(a, { name: 'my-office', status: 'away', since: 0, skin: null, seat: null, face: null });
   assert.equal(b.status, 'working');
   assert.equal(ev('a', 'UserPromptSubmit'), true);
   const back = state.list()[0];

@@ -4,17 +4,15 @@ import { projectName, uniqueName } from './names.js';
 
 const P = '/home/x/projects';
 
-test('pastas das sessões fixas viram o nome com til, inclusive subpastas', () => {
-  assert.equal(projectName(`${P}/MTI/detran`, P), '~detran');
-  assert.equal(projectName(`${P}/MTI/detran/detrannet-work/abc`, P), '~detran');
-  assert.equal(projectName(`${P}/MTI/secretario`, P), '~secretario');
-  assert.equal(projectName(`${P}/MTI/secretario-dev/`, P), '~secretario-dev');
-  assert.equal(projectName(`${P}/personal/chat-ferramentas`, P), 'chat-ferramentas');
+test('subpastas contam como o projeto, sem nomes especiais', () => {
+  assert.equal(projectName(`${P}/work/projeto`, P), 'projeto');
+  assert.equal(projectName(`${P}/work/projeto/sub/abc`, P), 'projeto');
+  assert.equal(projectName(`${P}/work/projeto-dev/`, P), 'projeto-dev');
 });
 
 test('outras pastas usam o nome do projeto', () => {
   assert.equal(projectName(`${P}/personal/my-office/src`, P), 'my-office');
-  assert.equal(projectName(`${P}/MTI/secretario-devx`, P), 'secretario-devx');
+  assert.equal(projectName(`${P}/work/projeto-devx`, P), 'projeto-devx');
   assert.equal(projectName(`${P}/playbooks`, P), 'playbooks');
   assert.equal(projectName(P, P), 'projects');
   assert.equal(projectName('/tmp/algo', P), 'algo');

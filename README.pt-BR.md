@@ -59,7 +59,35 @@ O dock precisa de Python 3, Pillow e uma versão do Kitty com `os-window-dock` e
 
 Os balões mostram trabalho, conclusão, erro ou cota. Depois de **10 minutos** sem nova tarefa, uma sessão com baia vai descansar, tenha terminado, dado erro ou atingido a cota. Após **4 horas** sem atividade, sai da sala e libera a baia; após **8 horas**, sai também da lista. Uma sessão fechada sai da sala na hora e continua na lista como "foi embora" por 8 horas; uma sessão nova no mesmo projeto toma o lugar dela. Sessões sem baia aparecem como home office e saem da lista após **1 hora** sem atividade.
 
-Os personagens vêm de uma folha de sprites com catálogo, que você pode ampliar ou substituir pelos seus, fora do repositório: veja **[Personagens](documentation/characters.pt-BR.md)**. Os nomes das sessões e algumas posições fixas ainda refletem a configuração original do projeto; para mudá-los, consulte `server/names.js` e `src/sessions.js`.
+Os personagens vêm de uma folha de sprites com catálogo, que você pode ampliar ou substituir pelos seus, fora do repositório: veja **[Personagens](documentation/characters.pt-BR.md)**.
+
+## Projetos fixos
+
+Cada sessão leva o nome do seu projeto: a pasta logo abaixo de uma pasta de família em `~/projects` (por exemplo, `~/projects/work/my-api/src` é `my-api`) ou, fora de `~/projects`, o nome da própria pasta. As demais sessões ganham um personagem sorteado, que mantêm enquanto ele estiver livre.
+
+Para dar a um projeto um personagem ou uma baia própria, crie o `config.json` em `~/.config/my-office/` (ou em `MY_OFFICE_CONFIG_DIR`), a mesma pasta dos personagens custom. Use o [`config.example.json`](config.example.json) como ponto de partida:
+
+```json
+{
+  "projects": {
+    "my-api": {"character": "char2", "desk": 1},
+    "website": {"character": "char4", "desk": 2},
+    "notes": {"character": "char6"}
+  }
+}
+```
+
+- `character`: o `id` de um personagem padrão ou custom. Nenhuma outra sessão o recebe, nem com o projeto fechado.
+- `desk`: o número da baia, de 1 a 6, o mesmo na página web e no dock do Kitty. Outras sessões só a pegam emprestada quando não há outra baia livre, e a devolvem quando o projeto abre.
+- Os dois são opcionais. Personagem ou baia desconhecidos, ou atribuídos a dois projetos, são ignorados com uma mensagem no log do backend.
+
+As baias são numeradas a partir do Boss, da direita para a esquerda e de cima para baixo:
+
+![Números das baias na página web](documentation/images/desks-web.png)
+
+![Números das baias no dock do Kitty](documentation/images/desks-dock.png)
+
+O backend lê o `config.json` ao iniciar; reinicie-o depois de uma mudança.
 
 ## Desenvolvimento
 

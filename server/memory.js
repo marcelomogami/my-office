@@ -33,10 +33,16 @@ function writeJson(file, data) {
 // Ids da folha antiga (até a 0.7), convertidos para os do catálogo.
 const LEGACY_SKINS = { s0: 'char1', s1: 'char3', s2: 'char2', s3: 'char5', s4: 'char4', s6: 'custom1', s7: 'custom2' };
 
+// Baias em letras (até a 0.7), convertidas para os números de agora.
+const LEGACY_SEATS = { I: '1', F: '2', E: '3', D: '4', H: '5', G: '6' };
+// Até a 0.7, algumas sessões tinham nome especial com til ("~projeto").
+const legacyName = (name) => name.replace(/^~/, '');
+
 export function loadMemory(file = MEMORY_FILE) {
   const { skins = {}, seats = {} } = readJson(file) ?? {};
-  const skinOf = ([name, skin]) => [name, LEGACY_SKINS[skin] ?? skin];
-  return { skins: new Map(Object.entries(skins).map(skinOf)), seats: new Map(Object.entries(seats)) };
+  const skinOf = ([name, skin]) => [legacyName(name), LEGACY_SKINS[skin] ?? skin];
+  const seatOf = ([name, seat]) => [legacyName(name), LEGACY_SEATS[seat] ?? seat];
+  return { skins: new Map(Object.entries(skins).map(skinOf)), seats: new Map(Object.entries(seats).map(seatOf)) };
 }
 
 export function saveMemory(memory, file = MEMORY_FILE) {
@@ -45,7 +51,10 @@ export function saveMemory(memory, file = MEMORY_FILE) {
 
 export function loadSessions(file = SESSIONS_FILE) {
   const list = readJson(file);
-  return Array.isArray(list) ? list.filter((s) => s && typeof s.id === 'string' && typeof s.name === 'string') : [];
+  if (!Array.isArray(list)) return [];
+  return list
+    .filter((s) => s && typeof s.id === 'string' && typeof s.name === 'string')
+    .map((s) => ({ ...s, name: legacyName(s.name) }));
 }
 
 export function saveSessions(list, file = SESSIONS_FILE) {

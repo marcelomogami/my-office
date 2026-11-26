@@ -245,9 +245,11 @@ function showSkin(id, seatId, status) {
 
 // ---------------------------------------------------------------- sessões
 // Lista das sessões abertas, na ordem em que apareceram. Do backend, cada uma
-// já vem com skin e lugar: { name, status, skin, seat }. Na demonstração
-// (?demo na URL), a própria página distribui e lembra no navegador.
+// já vem com skin, lugar e rosto do quadro: { name, status, skin, seat, face }.
+// Na demonstração (?demo na URL), a própria página distribui e lembra no
+// navegador, com as sessões fixas da configuração local.
 const DEMO = new URLSearchParams(location.search).has('demo');
+const DEMO_FIXED = DEMO ? (await (await fetch('/api/fixed')).json()).fixed : {};
 let sessions = [];
 let skinOf = new Map(); // nome da sessão -> skin
 let seatOf = new Map(); // nome da sessão -> lugar
@@ -262,7 +264,7 @@ function arrange() {
     return;
   }
   const names = sessions.map((s) => s.name);
-  const result = layout(names, SEAT_ORDER, demoMemory, { skins: skinOf, seats: seatOf }, CAST);
+  const result = layout(names, SEAT_ORDER, demoMemory, { skins: skinOf, seats: seatOf }, CAST, DEMO_FIXED);
   skinOf = result.skins;
   seatOf = result.seats;
   if (result.changed) {
@@ -285,7 +287,7 @@ function render() {
 }
 
 function setSessions(list) {
-  sessions = list.map(({ name, status, skin, seat, since }) => ({ name, status, skin, seat, since }));
+  sessions = list.map(({ name, status, skin, seat, since, face }) => ({ name, status, skin, seat, since, face }));
   render();
 }
 
@@ -342,10 +344,11 @@ document.querySelector('#manager')?.replaceChildren(card(MANAGER.skin, MANAGER.n
 
 function renderPanel() {
   panel.replaceChildren(
-    ...sessions.map(({ name, status, since }) => {
+    ...sessions.map(({ name, status, since, face }) => {
       const seated = seatOf.has(name);
       const homeOffice = !seated && status !== 'away';
-      const skin = homeOffice ? panelFace(name, skinOf.get(name), homeFaces, CAST) : seated && skinOf.get(name);
+      const homeFace = DEMO ? panelFace(name, skinOf.get(name), homeFaces, CAST, DEMO_FIXED) : face;
+      const skin = homeOffice ? homeFace : seated && skinOf.get(name);
       const { title, text } = panelDetails(name, status, seated, since);
       return card(skin, title, text);
     }),
@@ -405,16 +408,12 @@ if (!DEMO) {
 }
 
 // ---------------------------------------------------------------- demonstração
-// Com ?demo na URL, sessões fixas de exemplo; com ?demo&ciclo, os status
-// giram a cada 2,5 s.
+// Com ?demo na URL, as sessões fixas da configuração local e outras de
+// exemplo, até cinco; com ?demo&ciclo, os status giram a cada 2,5 s.
 if (DEMO) {
-  setSessions([
-    { name: '~detran', status: 'working' },
-    { name: '~secretario', status: 'error' },
-    { name: '~secretario-dev', status: 'idle' },
-    { name: 'my-office', status: 'done' },
-    { name: 'chat-ferramentas', status: 'quota' },
-  ]);
+  const demoNames = [...new Set([...Object.keys(DEMO_FIXED), 'my-office', 'website', 'api', 'notes', 'scripts'])].slice(0, 5);
+  const demoStatus = ['working', 'error', 'idle', 'done', 'quota'];
+  setSessions(demoNames.map((name, i) => ({ name, status: demoStatus[i] })));
   if (new URLSearchParams(location.search).has('ciclo')) {
     const names = Object.keys(STATUS).filter((st) => st !== 'stress' && st !== 'away');
     let k = 0;

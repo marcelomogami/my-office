@@ -19,6 +19,7 @@ from session_panel import compose
 from sheets import BOSS, FACES, crop, frame, seated_at
 
 WIDTH, HEIGHT, SCALE = 478, 72, 2
+DESKS = ('1', '2', '3', '4', '5', '6')
 PAIR = [(151, 'officeBlue', 'officeGrey', 'stickies', 'flagBR'),
         (244, 'officeOrange', 'officeGreen', 'posterSun', 'doc1'),
         (337, 'officeYellow', 'officeWhite', 'posterBlue', 'flagUS')]
@@ -26,31 +27,16 @@ STATUSES = {'working': ('iconWork1', 'iconWork2', 'iconWork3'), 'done': ('iconDo
             'error': ('iconError',), 'quota': ('iconQuota',)}
 
 
-def layout(sessions, previous=None):
-    """Preserva lugares enquanto possível, dando prioridade às duas sessões fixas."""
-    previous = previous or {}
-    candidates = [s for s in sessions if s.get('skin') in FACES and s.get('seat') and s.get('status') != 'away']
-    assigned, occupied = {}, set()
-    for s in candidates:
-        fixed = 4 if s['name'] == '~detran' else 5 if s['name'] == '~secretario' else None
-        if fixed is not None and fixed not in occupied:
-            assigned[s['name']] = fixed
-            occupied.add(fixed)
-    for s in candidates:
-        if s['name'] in assigned:
-            continue
-        old = previous.get(s['name'])
-        if old in range(4) and old not in occupied:
-            assigned[s['name']] = old
-            occupied.add(old)
-    for s in candidates:
-        if s['name'] in assigned:
-            continue
-        available = next((i for i in (0, 1, 2, 3, 4, 5) if i not in occupied), None)
-        if available is not None:
-            assigned[s['name']] = available
-            occupied.add(available)
-    return assigned
+def layout(sessions):
+    """Baia de cada sessão no dock, a partir da baia que o backend escolheu.
+
+    As baias têm a mesma numeração da página web, a partir do Boss, da direita
+    para a esquerda: a 1 e a 2 são o par ao lado do Boss, a 5 e a 6 o par da
+    ponta esquerda. A posição no dock (0 a 5, da esquerda para a direita) é
+    6 menos o número.
+    """
+    return {s['name']: 6 - int(s['seat']) for s in sessions
+            if s.get('skin') in FACES and s.get('status') != 'away' and s.get('seat') in DESKS}
 
 
 def rest_layout(sessions, seats, previous=None, rng=random):
@@ -212,7 +198,7 @@ def main():
                          else s for s in raw_sessions]
             if projected != sessions:
                 sessions = projected
-                seats = layout(sessions, seats)
+                seats = layout(sessions)
                 rest_seats = rest_layout(sessions, seats, rest_seats)
                 needs_redraw = True
             now_ms = time.time() * 1000
