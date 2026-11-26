@@ -13,7 +13,7 @@ O projeto é uma visualização local: não controla os agentes nem lê o conte�
 | Interface | Como funciona |
 |---|---|
 | **Página web** | Sala em PixiJS com seis baias, áreas de descanso e lista de sessões. |
-| **Dock do Kitty** | Sala compacta no rodapé do terminal, visível ao trocar de aba, com lista de até nove sessões. |
+| **Dock do Kitty** | Sala compacta no rodapé do terminal, visível ao trocar de aba, com lista com o Boss e até oito sessões. |
 
 As duas interfaces podem ficar abertas ao mesmo tempo e usam o mesmo backend. O Kitty é opcional para quem usa a página web.
 

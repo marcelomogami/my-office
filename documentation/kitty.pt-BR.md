@@ -49,7 +49,7 @@ Quando uma sessão entra em `idle`, o dock escolhe aleatoriamente um dos seis lu
 
 O prazo normal para entrar em descanso pertence ao backend, atualmente dez minutos. Para uma demonstração temporária somente no dock, adicione `--test-idle-seconds 10` ao comando do renderizador. A opção antecipa visualmente o descanso de sessões `done`, sem alterar o backend nem o escritório 1. Não a use no atalho normal.
 
-A lista mostra até nove sessões, em três colunas de três cartões, com avatar, nome e status. O fundo ao redor da sala e dos cartões é transparente, permitindo ver o tema do Kitty. O tempo aparece abaixo do avatar para sessões com lugar na sala; quem está em home office não exibe esse tempo. O prazo de teste não altera os indicadores de status mantidos pelo backend.
+A lista mostra o Boss primeiro, sem status por enquanto, seguido de até oito sessões em três colunas de três cartões. Os cartões das sessões exibem avatar, nome e status. O fundo ao redor da sala e dos cartões é transparente, permitindo ver o tema do Kitty. O tempo aparece abaixo do avatar para sessões com lugar na sala; quem está em home office não exibe esse tempo. O prazo de teste não altera os indicadores de status mantidos pelo backend.
 
 ## Testes
 

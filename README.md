@@ -13,7 +13,7 @@ My Office is a local, read-only display. It does not control agents or read conv
 | Interface | How it works |
 |---|---|
 | **Web page** | A PixiJS room with six workstations, rest areas, and a session list. |
-| **Kitty dock** | A compact room at the bottom of the terminal, visible across tabs, with a list of up to nine sessions. |
+| **Kitty dock** | A compact room at the bottom of the terminal, visible across tabs, with a list with the Boss and up to eight sessions. |
 
 Both interfaces can run at the same time and share the same backend. Kitty is optional for the web page.
 
