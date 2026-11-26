@@ -57,7 +57,7 @@ O dock precisa de Python 3, Pillow e uma versão do Kitty com `os-window-dock` e
 
 ## Como as sessões aparecem
 
-Os balões mostram trabalho, conclusão, erro ou cota. Depois de **10 minutos** pronta sem nova tarefa, uma sessão com baia vai descansar. Após **4 horas** sem atividade, sai da sala e libera a baia; após **8 horas**, sai também da lista. Sessões sem baia aparecem como home office e saem da lista após **1 hora** sem atividade.
+Os balões mostram trabalho, conclusão, erro ou cota. Depois de **10 minutos** pronta sem nova tarefa, uma sessão com baia vai descansar. Após **4 horas** sem atividade, sai da sala e libera a baia; após **8 horas**, sai também da lista. Uma sessão fechada sai da sala na hora e continua na lista como "foi embora" por 8 horas; uma sessão nova no mesmo projeto toma o lugar dela. Sessões sem baia aparecem como home office e saem da lista após **1 hora** sem atividade.
 
 Os nomes, personagens e algumas posições fixas refletem a configuração original do projeto. Para personalizá-los, consulte `server/names.js`, `src/sessions.js` e `tools/dock/office.py`.
 

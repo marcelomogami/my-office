@@ -112,7 +112,7 @@ Add the entries below to `~/.claude/settings.json`. `tools/hook.sh` reads event 
 }
 ```
 
-The PID lets the backend remove a session when its process disappears, including when there is no `SessionEnd`. `StopFailure` requires support in the installed version. See the [Claude Code hooks reference](https://code.claude.com/docs/en/hooks) for scopes, events, and configuration rules.
+The PID lets the backend detect that a session ended when its process disappears, including when there is no `SessionEnd`. A closed session leaves the room and stays in the list as away for 8 hours. `StopFailure` requires support in the installed version. See the [Claude Code hooks reference](https://code.claude.com/docs/en/hooks) for scopes, events, and configuration rules.
 
 ## Codex
 
@@ -229,7 +229,7 @@ Review and trust new or changed Codex hook definitions before use. In the CLI, u
 
 `PreModelRequest` signals work, and `PostModelRequest` with a failed result signals an error. A subsequent attempt returns the session to working. Specific Codex quota detection is not yet available. `Interrupt` marks the session as finished and `SessionEnd` removes it when received.
 
-To identify some exits without `SessionEnd`, the backend queries loaded session identifiers from the local Codex App Server, by default at `ws://127.0.0.1:8767`; `MY_OFFICE_CODEX_WS` changes the address. It removes only sessions previously confirmed on that server and missing in two consecutive queries. If the server is unavailable or a session was never confirmed there, this check cannot establish that it ended; inactivity rules still apply.
+To identify some exits without `SessionEnd`, the backend queries loaded session identifiers from the local Codex App Server, by default at `ws://127.0.0.1:8767`; `MY_OFFICE_CODEX_WS` changes the address. It marks as closed only sessions previously confirmed on that server and missing in two consecutive queries. If the server is unavailable or a session was never confirmed there, this check cannot establish that it ended; inactivity rules still apply.
 
 ## Test without affecting the service
 

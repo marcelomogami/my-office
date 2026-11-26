@@ -18,7 +18,7 @@ function setup({ dead = new Set(), saved = [] } = {}) {
   return { state, ev, memory, dead, advance: (ms) => (t += ms), saves: () => saves };
 }
 
-test('ciclo de vida: entra, trabalha, pronto, ocioso, sai', () => {
+test('ciclo de vida: entra, trabalha, pronto, ocioso, vai embora ao fechar', () => {
   const { state, ev, advance } = setup();
   assert.equal(ev('a', 'SessionStart'), true);
   assert.equal(state.list()[0].status, 'done');
@@ -34,7 +34,7 @@ test('ciclo de vida: entra, trabalha, pronto, ocioso, sai', () => {
   assert.equal(ev('a', 'UserPromptSubmit'), true);
   assert.equal(state.list()[0].status, 'working');
   assert.equal(ev('a', 'SessionEnd'), true);
-  assert.deepEqual(state.list(), []);
+  assert.deepEqual(state.list(), [{ name: 'my-office', status: 'away', since: 1000, skin: null, seat: null }]);
   assert.equal(ev('a', 'SessionEnd'), false);
 });
 
@@ -97,7 +97,7 @@ test('quem já está sentado não é tirado do lugar por quem volta', () => {
   ev('2', 'SessionStart');
   ev('2', 'SessionEnd');
   ev('9', 'SessionStart', `${P}/outra/coisa`);
-  const coisa = state.list()[0].seat;
+  const coisa = state.list().find((s) => s.name === 'coisa').seat;
   ev('3', 'SessionStart');
   assert.equal(state.list().find((s) => s.name === 'coisa').seat, coisa);
 });
@@ -110,23 +110,27 @@ test('a partir da 7ª sessão não há lugar', () => {
   assert.equal(list[6].seat, null);
 });
 
-test('sessão cujo processo morreu sai da sala no tick', () => {
+test('sessão cujo processo morreu vai embora no tick e continua na lista', () => {
   const { state, dead } = setup();
   state.event({ session_id: 'a', cwd: `${P}/personal/a`, event: 'Stop', pid: 111 });
   state.event({ session_id: 'b', cwd: `${P}/personal/b`, event: 'Stop', pid: 222 });
   assert.equal(state.tick(), false);
   dead.add(111);
   assert.equal(state.tick(), true);
-  assert.deepEqual(state.list().map((s) => s.name), ['b']);
+  assert.deepEqual(state.list().map((s) => [s.name, s.status, s.seat]), [['a', 'away', null], ['b', 'done', 'H']]);
+  assert.equal(state.tick(), false);
 });
 
-test('snapshot volta num estado novo, já sem as sessões mortas', () => {
+test('snapshot volta num estado novo, com as sessões mortas já fora da sala', () => {
   const first = setup();
   first.state.event({ session_id: 'a', cwd: `${P}/MTI/secretario`, event: 'Stop', pid: 111 });
   first.state.event({ session_id: 'b', cwd: `${P}/personal/b`, event: 'UserPromptSubmit', pid: 222 });
   const saved = first.state.snapshot();
   const again = setup({ saved, dead: new Set([222]) });
-  assert.deepEqual(again.state.list(), [{ name: '~secretario', status: 'done', since: 0, skin: 's6', seat: 'F' }]);
+  assert.deepEqual(again.state.list(), [
+    { name: '~secretario', status: 'done', since: 0, skin: 's6', seat: 'F' },
+    { name: 'b', status: 'away', since: 0, skin: null, seat: null },
+  ]);
   again.advance(1000);
   again.state.tick();
   assert.equal(again.state.list()[0].status, 'idle');
@@ -250,7 +254,8 @@ test('detecta saída só do Codex confirmado no servidor, após duas ausências'
   state.reconcileCodex(new Set(['codex-a']), snap());
   assert.equal(state.reconcileCodex(new Set(), snap()), false);
   assert.equal(state.reconcileCodex(new Set(), snap()), true);
-  assert.deepEqual(state.list().map(s => s.name), ['claude']);
+  assert.deepEqual(state.list().map(s => [s.name, s.status]), [['codex', 'away'], ['claude', 'done']]);
+  assert.equal(state.reconcileCodex(new Set(), snap()), false);
 });
 
 test('sessões não observadas no servidor e eventos durante a consulta não são removidos', () => {
@@ -283,4 +288,42 @@ test('identificação de Codex sobrevive ao snapshot', () => {
   first.state.event({session_id:'a',cwd:'/tmp/a',event:'Stop',agent:'codex'});
   const again = setup({ saved: first.state.snapshot() });
   assert.equal(again.state.codexCandidates().has('a'), true);
+});
+
+test('sessão fechada fica na lista como "foi embora" e sai depois de 8 horas', () => {
+  const { state, ev, advance } = setup();
+  ev('a', 'SessionStart');
+  advance(60_000);
+  ev('a', 'SessionEnd');
+  advance(8 * 3600_000 - 1);
+  state.tick();
+  assert.equal(state.list()[0].status, 'away');
+  advance(1);
+  assert.equal(state.tick(), true);
+  assert.deepEqual(state.list(), []);
+});
+
+test('sessão fechada volta se mandar um evento novo', () => {
+  const { state, ev } = setup();
+  ev('a', 'SessionStart');
+  const seat = state.list()[0].seat;
+  ev('a', 'SessionEnd');
+  ev('a', 'UserPromptSubmit');
+  assert.deepEqual([state.list()[0].status, state.list()[0].seat], ['working', seat]);
+});
+
+test('sessão nova no mesmo projeto substitui a que foi embora, sem virar "(2)"', () => {
+  const { state, ev } = setup();
+  ev('a', 'SessionStart');
+  ev('a', 'SessionEnd');
+  ev('x', 'SessionStart', `${P}/personal/outro`);
+  ev('b', 'SessionStart');
+  assert.deepEqual(state.list().map((s) => [s.name, s.status]), [['outro', 'done'], ['my-office', 'done']]);
+});
+
+test('sessão aberta no mesmo projeto continua com sufixo', () => {
+  const { state, ev } = setup();
+  ev('a', 'SessionStart');
+  ev('b', 'SessionStart');
+  assert.deepEqual(state.list().map((s) => s.name), ['my-office', 'my-office (2)']);
 });
