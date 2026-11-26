@@ -2,6 +2,12 @@
 
 Notable changes are grouped by published version. Complete release notes are also available in the [GitHub releases](https://github.com/marcelomogami/my-office/releases).
 
+## [0.7.0](https://github.com/marcelomogami/my-office/releases/tag/v0.7.0)
+
+- Renames the manager character to Boss and adds the Boss as the first card in the Kitty list, without a status for now. Up to eight session cards follow.
+- Adds bilingual English and Brazilian Portuguese READMEs and guides for Kitty and agent hooks.
+- Adds a changelog and updates documentation for the current session lifecycle and Codex integration.
+
 ## [0.6.1](https://github.com/marcelomogami/my-office/releases/tag/v0.6.1)
 
 - Dock list with up to nine sessions in three columns, including avatar, name, and status.
