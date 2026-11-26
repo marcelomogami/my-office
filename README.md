@@ -1,60 +1,75 @@
 # My Office
 
-Escritório em pixel art, feito com PixiJS, que mostra cada sessão de agente de IA aberta como um personagem numa baia, com o status num balão. É só para ver: não controla as sessões nem lê o que elas fazem. Um backend local em Node, sem dependências, recebe eventos das sessões e repassa à página.
+*[Leia isto em português](README.pt-BR.md)*
 
-## Como executar
+**A pixel-art office for keeping an eye on Claude Code and Codex sessions.** Each session appears as a character, with a bubble showing whether it is working, finished, encountered an error, or reached its quota.
 
-É necessário ter Node.js e npm instalados.
+![Preview of the Kitty office, with the room and session list](assets/mockups/lista-sessoes-dock.png)
+
+My Office is a local, read-only display. It does not control agents or read conversation contents. Hooks send session metadata to a Node backend, which updates the interfaces. The image above uses example sessions.
+
+## Choose your office
+
+| Interface | How it works |
+|---|---|
+| **Web page** | A PixiJS room with six workstations, rest areas, and a session list. |
+| **Kitty dock** | A compact room at the bottom of the terminal, visible across tabs, with a list with the Boss and up to eight sessions. |
+
+Both interfaces can run at the same time and share the same backend. Kitty is optional for the web page.
+
+## Get started
+
+You need Node.js 20.19 or later in the 20.x series, or 22.12 or later, and npm. To try the web page with example sessions:
 
 ```sh
 npm install
-npm run dev      # desenvolvimento: página e backend em http://127.0.0.1:5199
-npm test         # testes do backend
-npm run build    # gera dist/
-npm start        # backend servindo dist/ (MY_OFFICE_HOST, MY_OFFICE_PORT)
+npm run dev
 ```
 
-As sessões chegam por `POST /api/evento` com `{ "session_id", "cwd", "event" }`, só da própria máquina, e a página as recebe por `GET /api/stream`. Exemplo:
+Open **http://127.0.0.1:5199/?demo**. The demo uses example sessions; configure your agent's hooks to display real sessions.
 
-```sh
-curl -X POST 127.0.0.1:5199/api/evento -d '{"session_id":"1","cwd":"'$PWD'","event":"UserPromptSubmit"}'
-```
+> The development server uses port 5199. If the My Office service is already using that port, stop `my-office.socket` and `my-office.service` before starting development, and start the socket again when finished.
 
-As sessões do Claude Code chegam pelo `tools/hook.sh` (precisa de `jq` e `curl`), ligado aos eventos `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `PreCompact`, `Stop`, `StopFailure` e `SessionEnd`; ele manda só o identificador da sessão, a pasta, o nome do evento, o tipo do erro no `StopFailure` (`rate_limit` vira cota acabou; os outros, erro) e o pid do processo do Claude Code (para o backend tirar da sala as sessões que morreram). Para deixar a sala sempre disponível, as units em `deploy/` rodam o backend como serviço do systemd do usuário, ativado por socket na porta 5199 e encerrado sozinho depois de 10 minutos sem uso:
+To build the production web page and start the backend:
 
 ```sh
 npm run build
-ln -s "$PWD"/deploy/my-office.{socket,service} ~/.config/systemd/user/
-systemctl --user daemon-reload
-systemctl --user enable --now my-office.socket
+npm start
 ```
 
-O caminho do projeto está fixo em `deploy/my-office.service` (`~/projects/personal/my-office`). Para usar o `npm run dev`, pare antes `my-office.socket` e `my-office.service`, que usam a mesma porta.
+The backend defaults to `127.0.0.1:5199`. Override the host and port with `MY_OFFICE_HOST` and `MY_OFFICE_PORT`; the event API only accepts connections from the local machine.
 
-Skins e lugares sorteados ficam em `~/.local/state/my-office/memory.json`, e as sessões abertas, em `sessions.json`, para voltarem quando o backend reinicia.
+## Connect your agents
 
-Os sprites são do [Pixel Office Asset Pack, de 2dPig](https://2dpig.itch.io/pixel-office), distribuído sob CC0.
+The scripts [`tools/hook.sh`](tools/hook.sh) and [`tools/codex-hook.sh`](tools/codex-hook.sh) receive events from Claude Code and Codex, respectively. They send only the metadata needed to identify the session and its status, without prompts, responses, or tool contents.
 
-A disposição fica em `src/scene.json` e o mapa dos sprites em `src/frames.json`. Tudo vem de `assets/pixel-office-2dpig/PixelOfficeAssetsNew2.png`, a folha do pacote com acréscimos desenhados à mão (personagens sentados, cadeiras de escritório, porta dupla e bandeira do Brasil). `python3 tools/compose_scene.py` gera um PNG da cena sem navegador, em `assets/mockups/office-layout-claude.png`.
+**[Install, trust, and test the hooks](documentation/hooks.md)**
 
-## Sessões e balões
+Codex model failures appear as errors, and a subsequent attempt returns the session to working. Specific Codex quota detection is not yet available.
 
-Cada sessão aberta vira um personagem numa baia. As sessões fixas (`~detran`, `~secretario`, `~secretario-dev` e, quando o Codex for ligado, `chat-ferramentas`) têm sempre a mesma skin, e `~detran` e `~secretario` também a mesma baia; as outras ganham uma skin livre sorteada, lembrada para não mudar a cada reinício, e aparecem com o nome do projeto. A configuração fica em `src/sessions.js`. Passando o mouse num personagem aparece o nome da sessão, e o quadro ao lado da sala lista todas com rosto, nome e status.
+## Use the Kitty dock
 
-O balão mostra o status: trabalhando (pontinhos animados), pronto (joinha), erro (exclamação vermelha, pulando) ou cota acabou (bateria vazia). Os balões são sempre brancos. Quando a sessão fica 30 minutos pronta sem nova tarefa (`idle`), o personagem levanta e vai para a copa (até 3) ou para a mesa de reunião (mais 2). Depois de 4 horas sem atividade, vai embora: sai da sala, libera a baia e fica só no quadro lateral até a sessão voltar a agir. Os status e o evento de origem de cada um ficam em `src/status.js`; o desenho do balão, em `src/bubbles.js`.
+The dock requires Python 3, Pillow, and a Kitty version with `os-window-dock` and graphics protocol support. It was tested with Kitty 0.51.0. The backend must be running or available through its socket.
 
-Com `?demo` na URL, a página mostra uma demonstração fixa, sem backend; com `?demo&ciclo`, os status giram. No console do navegador, `office.update('paracetacaro', 'working')` abre ou atualiza uma sessão e `office.close('my-office')` fecha uma.
+**[Configure and use the Kitty dock](documentation/kitty.md)**
 
-## Escritório no Kitty
+## Session behavior
 
-O escritório 2 pode ser desenhado em um dock inferior do Kitty, sem abrir a página do escritório original. O renderizador usa Python 3 e Pillow e acompanha o backend local existente pela rota `/api/stream`. O Kitty precisa oferecer `os-window-dock` e o protocolo gráfico; o teste foi feito no Kitty 0.51.0.
+Bubbles show working, finished, error, or quota. A session with a workstation moves to a rest area after **10 minutes** finished without a new task. After **4 hours** without activity, it leaves the room and frees its workstation; after **8 hours**, it also leaves the list. Sessions without a workstation appear as home office and leave the list after **1 hour** without activity.
 
-A partir de uma ação do Kitty, o dock pode ser iniciado com:
+The names, characters, and some fixed positions reflect the project's original setup. To customize them, see `server/names.js`, `src/sessions.js`, and `tools/dock/office.py`.
 
-```text
-launch --type=os-window-dock --dock-edge=bottom --dock-size=9 --dock-skip-focus python3 /caminho/para/my-office/tools/dock/office.py
+## Development
+
+```sh
+npm test                                                   # backend and integration tests
+python3 -m unittest discover -s tools/dock -p 'test_*.py' # dock tests
 ```
 
-Ajuste o caminho para o projeto e a altura de nove linhas para a fonte e a janela usadas. O programa usa o backend em `http://127.0.0.1:5199/api/stream`; para testar outro backend, passe `--url` com o endereço do stream. A prévia do layout está em `dock-preview.html` no servidor de desenvolvimento.
+The backend exposes `POST /api/evento` for local metadata and `GET /api/stream` to broadcast the session list. Sessions and remembered positions are stored in `~/.local/state/my-office/`, or under the directory specified by `XDG_STATE_HOME`.
 
-Para verificar o renderizador sem Kitty, execute `python3 -m unittest discover -s tools/dock -p 'test_*.py'`. A lista do dock mostra até nove sessões. Para detalhes de arquitetura, configuração e testes, consulte [Escritório 2 no Kitty](documentation/kitty.md).
+The units in [`deploy/`](deploy/) show a user service with socket activation. Update the project path in `deploy/my-office.service` if the repository is elsewhere. See the [changelog](CHANGELOG.md) for release history.
+
+## Credits
+
+The sprites are based on the [Pixel Office Asset Pack by 2dPig](https://2dpig.itch.io/pixel-office), released under [CC0](https://creativecommons.org/publicdomain/zero/1.0/). The sheet includes adaptations and additional artwork created for My Office.
