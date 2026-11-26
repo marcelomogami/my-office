@@ -6,7 +6,7 @@
 
 **Um escritório em pixel art para acompanhar sessões do Claude Code e do Codex.** Cada sessão aparece como um personagem, com um balão que indica quando está trabalhando, terminou, encontrou um erro ou atingiu a cota.
 
-![Prévia do escritório no Kitty, com a sala e a lista de sessões](assets/mockups/lista-sessoes-dock.png)
+![Prévia do escritório no Kitty, com a sala e a lista de sessões](documentation/images/lista-sessoes-dock.png)
 
 O projeto é uma visualização local: não controla os agentes nem lê o conteúdo das conversas. Os hooks enviam metadados a um backend em Node, que atualiza as interfaces. A imagem acima usa sessões de exemplo.
 
