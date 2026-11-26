@@ -1,6 +1,6 @@
 import unittest
 from office import layout, render, rest_layout
-from session_panel import details, face_for
+from session_panel import details, face_for, panel_entries
 
 
 def session(name, skin, status='working', seat='G'):
@@ -43,6 +43,14 @@ class OfficeTest(unittest.TestCase):
         self.assertEqual(details(s, True, 121000), ('a', 'idle', '02m'))
         self.assertEqual(details(s, False, 121000), ('a (home office)', 'done', ''))
         self.assertEqual(details(s, True, 7501000)[2], '2h05m')
+
+    def test_boss_first_and_eight_session_slots(self):
+        sessions = [session(str(i), 's0') for i in range(9)]
+        entries = panel_entries(sessions)
+        self.assertEqual([s['name'] for s in entries], ['Boss'] + [str(i) for i in range(8)])
+        self.assertEqual(face_for(entries[0]), 's5')
+        self.assertEqual(details(entries[0], False, 0), ('Boss', 'stress', ''))
+        self.assertEqual(panel_entries([])[0]['name'], 'Boss')
 
     def test_home_office_face_is_stable(self):
         s = session('projeto', None, seat=None)
