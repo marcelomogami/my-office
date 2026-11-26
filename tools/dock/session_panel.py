@@ -5,6 +5,8 @@ import time
 
 from PIL import Image, ImageDraw, ImageFont
 
+from sheets import crop
+
 CARD_WIDTH, CARD_HEIGHT, GAP = 178, 44, 6
 TOP, LEFT = 4, 968
 PANEL_WIDTH, PANEL_HEIGHT = 1514, 148
@@ -66,7 +68,7 @@ def panel_entries(sessions):
     return [{'name': 'Boss', 'skin': 's5', '_boss': True}, *sessions[:8]]
 
 
-def compose(room, sessions, seats, sheet, frames, now=None):
+def compose(room, sessions, seats, now=None):
     """Desenha o Boss e até oito sessões em três colunas de três cartões."""
     now = time.time() * 1000 if now is None else now
     canvas = Image.new('RGBA', (PANEL_WIDTH, PANEL_HEIGHT), (0, 0, 0, 0))
@@ -78,8 +80,9 @@ def compose(room, sessions, seats, sheet, frames, now=None):
         draw.rounded_rectangle((x, y, x + CARD_WIDTH - 1, y + CARD_HEIGHT - 1),
                                radius=5, fill='#172430', outline='#2a3844')
         skin = face_for(session)
-        sx, sy, width, _ = frames['p' + skin[1:]]
-        face = sheet.crop((sx, sy, sx + width, sy + 14)).resize((width * 2, 28), Image.Resampling.NEAREST)
+        standing = crop('p' + skin[1:])
+        width = standing.width
+        face = standing.crop((0, 0, width, 14)).resize((width * 2, 28), Image.Resampling.NEAREST)
         canvas.alpha_composite(face, (x + (44 - face.width) // 2, y + 1))
         title, status, timer = details(session, session['name'] in seats, now)
         if timer:
@@ -89,11 +92,9 @@ def compose(room, sessions, seats, sheet, frames, now=None):
         if session.get('_boss'):
             continue
         icon_name = ICONS.get(status, 'iconWork3')
-        ix, iy, iw, ih = frames[icon_name]
-        icon = sheet.crop((ix, iy, ix + iw, iy + ih))
+        icon = crop(icon_name)
+        icon = icon.crop(icon.getbbox() or (0, 0, icon.width, icon.height))
         icon.thumbnail((13, 11), Image.Resampling.NEAREST)
-        if iw <= 11 and ih <= 9:
-            icon = icon.resize((min(13, iw + 2), min(11, ih + 2)), Image.Resampling.NEAREST)
         draw.rounded_rectangle((x + 44, y + 23, x + 59, y + 36), radius=2, fill='#f4f4f4')
         canvas.alpha_composite(icon, (x + 44 + (16 - icon.width) // 2, y + 23 + (14 - icon.height) // 2))
         label = LABELS.get(status, status)
