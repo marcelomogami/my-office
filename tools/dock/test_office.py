@@ -67,4 +67,14 @@ class OfficeTest(unittest.TestCase):
         self.assertNotEqual(render(working, layout(working)).tobytes(), render(resting, layout(resting)).tobytes())
 
 
+class RestDemoTest(unittest.TestCase):
+    def test_rest_demo_fills_every_spot_in_order(self):
+        from office import CAST, REST, rest_demo
+        sessions, positions = rest_demo(['char3', 'desconhecido', 'char3'])
+        self.assertEqual(len(sessions), len(REST))
+        self.assertEqual(sessions[0]['skin'], 'char3')
+        self.assertEqual(len({s['skin'] for s in sessions}), min(len(REST), len(CAST)))
+        self.assertEqual(positions, {s['name']: i for i, s in enumerate(sessions)})
+
+
 if __name__ == '__main__': unittest.main()

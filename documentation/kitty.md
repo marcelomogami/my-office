@@ -50,6 +50,8 @@ When a session becomes `idle`, the dock randomly selects one of the eight free r
 
 The normal delay before rest belongs to the backend and is currently ten minutes. For a temporary dock-only demonstration, add `--test-idle-seconds 10` to the renderer command. This visually advances the rest of `done` sessions without changing the backend or Office 1. Do not use it in the normal shortcut.
 
+To check the rest positions, run `python3 tools/dock/office.py --descanso` in a Kitty tab: every spot gets a character, the list shows "lugar 1" to "lugar 8", and the image refreshes by itself when the dock code changes. `--descanso char3,char1` picks who takes the first spots.
+
 The list shows the Boss first, without a status for now, followed by up to eight sessions in three columns of three cards. Session cards show avatar, name, and status. The background around the room and cards is transparent so the Kitty theme shows through. Elapsed time appears under the avatar for sessions with a room workstation; home-office sessions do not show it. The test delay does not change backend status indicators.
 
 ## Tests

@@ -4,6 +4,7 @@ import argparse
 import base64
 import io
 import json
+import os
 import queue
 import random
 import sys
@@ -16,7 +17,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 from session_panel import compose
-from sheets import BOSS, FACES, crop, frame, seated_at
+from sheets import BOSS, CAST, FACES, crop, frame, seated_at
 
 WIDTH, HEIGHT, SCALE = 478, 72, 2
 DESKS = ('1', '2', '3', '4', '5', '6')
@@ -24,8 +25,8 @@ DESKS = ('1', '2', '3', '4', '5', '6')
 # para a esquerda e de cima para baixo (índices 0 a 7). Em pé na copa
 # ('stand', canto da célula), sentado nas cadeiras da copa e dois em cada sofá
 # ('chair', canto da cadeira, pela regra única de encaixe).
-REST = (('chair', 125, 12, True), ('chair', 78, 12, False), ('stand', 60, 17, True), ('stand', 20, 19, False),
-        ('chair', 175, 37, True), ('chair', 153, 37, False), ('chair', 78, 43, True), ('chair', 56, 43, False))
+REST = (('chair', 125, 12, True), ('chair', 82, 12, False), ('stand', 60, 17, True), ('stand', 20, 21, False),
+        ('chair', 177, 40, True), ('chair', 155, 40, False), ('chair', 80, 43, True), ('chair', 58, 43, False))
 PAIR = [(151, 'officeBlue', 'officeGrey', 'stickies', 'flagBR'),
         (244, 'officeOrange', 'officeGreen', 'posterSun', 'doc1'),
         (337, 'officeYellow', 'officeWhite', 'posterBlue', 'flagUS')]
@@ -107,8 +108,8 @@ def render(sessions, seats, phase=0, rest_seats=None):
     for x in range(0, WIDTH, 26): sprite('wall', x, 0)
     for item in [('clock',417,-17), ('window',224,-14), ('windowNote',45,-14),
                  ('door',314,-20), ('calendar',100,-12), ('vending',4,-5),
-                 ('cooler',30,11), ('tableSmall',38,4,True), ('coffee',54,4),
-                 ('mug',44,3), ('chair5',78,10), ('chair5',120,10,True)]: sprite(*item)
+                 ('cooler',30,11), ('tableSmall',38,4,True), ('coffee',54,0),
+                 ('mug',46,4), ('chair5',82,10), ('chair5',120,10,True)]: sprite(*item)
     live = {s['name']: s for s in sessions}
     rest_seats = rest_seats if rest_seats is not None else rest_layout(sessions, seats)
     resting = {slot: live[name] for name, slot in rest_seats.items() if name in live}
@@ -119,7 +120,7 @@ def render(sessions, seats, phase=0, rest_seats=None):
                 if kind == 'stand': sprite(resting[slot]['skin']+':standing', x, y, flip)
                 else: person(resting[slot]['skin'], x, y, flip)
     rest((0, 1, 2, 3))
-    for item in [('tableSmall',95,4), ('boxGreen',92,0,True), ('mugCoffee',111,0)]: sprite(*item)
+    for item in [('tableSmall',96,4), ('boxGreen',93,4,True), ('mugCoffee',112,3)]: sprite(*item)
     anchors = []
     for i, (x, lc, rc, ld, rd) in enumerate(PAIR):
         y=6
@@ -144,13 +145,37 @@ def render(sessions, seats, phase=0, rest_seats=None):
     for item in [('computerSide1',x-5,y+5,True),('mugCoffee',x+5,y+7),('partitionSingle',x,y+30,True),
                  ('plant',42,40),('sofaGreen',58,40)]: sprite(*item)
     rest((6, 7))
-    sprite('sofaOrange',155,34)
+    sprite('sofaOrange',155,37)
     rest((4, 5))
     for item in [('plant',200,34),('plant',343,34),('cat',320,36),('binRed',386,34),
                  ('binBlue',259,34),('tableLong',270,34,True),('doc1',285,28),('printer',274,27),('dog',437,25,True)]: sprite(*item)
     for anchor,status,bx in anchors: bubble(anchor,status,bx)
     room = im.resize((WIDTH*SCALE, HEIGHT*SCALE), Image.Resampling.NEAREST)
     return compose(room, sessions, seats)
+
+
+def rest_demo(chosen=()):
+    """Um personagem em cada lugar de descanso, na ordem dos números, para
+    conferir as posições. `chosen` escolhe quem fica nos primeiros lugares."""
+    order = list(dict.fromkeys([c for c in chosen if c in FACES] + list(CAST)))
+    # com menos personagens que lugares, repete do começo
+    skins = [order[i % len(order)] for i in range(len(REST))]
+    sessions = [{'name': f'lugar {i + 1}', 'skin': cid, 'status': 'idle', 'seat': None, 'face': cid}
+                for i, cid in enumerate(skins)]
+    return sessions, {s['name']: i for i, s in enumerate(sessions)}
+
+
+def watch_and_show(sessions, rest_seats):
+    """Mostra a demonstração e reinicia o processo quando o código do dock muda."""
+    files = list(Path(__file__).parent.glob('*.py'))
+    stamp = lambda: [f.stat().st_mtime for f in files]
+    start = stamp()
+    send_image(render(sessions, {}, 0, rest_seats))
+    while stamp() == start:
+        time.sleep(.3)
+    sys.stdout.write('\x1b_Ga=d,d=I,i=1,q=2\x1b\\')
+    sys.stdout.flush()
+    os.execv(sys.executable, [sys.executable, *sys.argv])
 
 
 def stream(url, events):
@@ -187,12 +212,24 @@ def main():
     parser.add_argument('--url', default='http://127.0.0.1:5199/api/stream')
     parser.add_argument('--png', type=Path, help='Gera um quadro vazio para inspeção')
     parser.add_argument('--test-idle-seconds', type=float, help='Prazo temporário de descanso apenas no dock')
+    parser.add_argument('--descanso', nargs='?', const='', metavar='IDS',
+                        help='Demonstração: um personagem em cada lugar de descanso (ex.: char3,char1), '
+                             'recarregada quando o código muda')
     args = parser.parse_args()
+    demo = rest_demo(args.descanso.split(',')) if args.descanso is not None else None
     if args.png:
-        render([],{}).save(args.png)
+        (render(demo[0], {}, 0, demo[1]) if demo else render([], {})).save(args.png)
         return
     if not sys.stdout.isatty():
         parser.error('execute dentro de um terminal Kitty')
+    if demo:
+        sys.stdout.write('\x1b[?25l\x1b[2J')
+        try:
+            watch_and_show(*demo)
+        except KeyboardInterrupt:
+            sys.stdout.write('\x1b_Ga=d,d=I,i=1,q=2\x1b\\\x1b[?25h')
+            sys.stdout.flush()
+        return
     events = queue.Queue()
     threading.Thread(target=stream, args=(args.url,events), daemon=True).start()
     sessions, raw_sessions, seats, rest_seats, phase = [], [], {}, {}, 0
