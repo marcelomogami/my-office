@@ -72,7 +72,7 @@ function workstation(x, leftSkin, rightSkin, leftChair, rightChair, leftDecorati
   sprite('mugRed', x + 41, y + 24);
   sprite('partition', x, y + 30);
 }
-// Relógio na parede, em frente à baia de Boss.
+// Relógio na parede, em frente à baia do Boss.
 sprite('clock', 417, 1);
 sprite('window', 224, -11);
 sprite('windowNote', 45, -11);
