@@ -61,6 +61,8 @@ Os nomes, personagens e algumas posições fixas refletem a configuração origi
 
 ## Desenvolvimento
 
+Os testes rodam automaticamente no GitHub Actions a cada push e pull request ([`.github/workflows/tests.yml`](.github/workflows/tests.yml)). Para rodar localmente:
+
 ```sh
 npm test                                             # testes do backend e da integração
 python3 -m unittest discover -s tools/dock -p 'test_*.py'  # testes do dock

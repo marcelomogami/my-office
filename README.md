@@ -61,6 +61,8 @@ The names, characters, and some fixed positions reflect the project's original s
 
 ## Development
 
+Tests run automatically on GitHub Actions for every push and pull request ([`.github/workflows/tests.yml`](.github/workflows/tests.yml)). To run them locally:
+
 ```sh
 npm test                                                   # backend and integration tests
 python3 -m unittest discover -s tools/dock -p 'test_*.py' # dock tests
