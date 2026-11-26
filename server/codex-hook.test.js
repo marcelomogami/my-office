@@ -76,3 +76,27 @@ test('resultado bem sucedido, cancelado ou desconhecido não vira erro', async (
   await new Promise((resolve) => setTimeout(resolve, 150));
   assert.equal(received.length, before);
 });
+
+test('falha por limite de uso, cota ou créditos vira cota, sem enviar a mensagem', async () => {
+  const before = received.length;
+  const quota = [
+    'You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/settings/usage to purchase more credits or try again at 3:45 PM.',
+    'You’ve hit your usage limit for GPT-5. Switch to another model now, or try again later.',
+    'Quota exceeded. Check your plan and billing details.',
+    'Your workspace is out of credits. Add credits to continue.',
+    'You hit your spend cap set in your workspace. Increase your spend cap to continue.',
+    'Your API key has reached its spend limit.',
+    'rate limit exceeded: try again in 20s',
+    'budget reached',
+    'To use Codex with your ChatGPT plan, upgrade to Plus: https://chatgpt.com/explore/plus.',
+  ];
+  const other = ['Selected model is at capacity. Please try a different model.', 'stream disconnected before completion: eof', null];
+  for (const [i, error] of [...quota, ...other].entries()) {
+    const r = run(JSON.stringify({ session_id: `q${i}`, cwd: '/x', hook_event_name: 'PostModelRequest', status: 'failed', error }));
+    assert.equal(r.status, 0); assert.equal(r.stdout, ''); assert.equal(r.stderr, '');
+  }
+  await waitFor(before + quota.length + other.length);
+  const got = received.slice(before).sort((a, b) => Number(a.session_id.slice(1)) - Number(b.session_id.slice(1)));
+  assert.deepEqual(got.map((e) => e.event), [...quota.map(() => 'CodexQuotaExceeded'), ...other.map(() => 'CodexModelFailed')]);
+  for (const e of got) assert.deepEqual(Object.keys(e).sort(), ['agent', 'cwd', 'event', 'session_id']);
+});

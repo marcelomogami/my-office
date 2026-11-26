@@ -29,6 +29,7 @@ const STATUS_OF = {
   Interrupt: 'done', // turno do Codex interrompido pelo usuário
   CodexModelStarted: 'working',
   CodexModelFailed: 'error',
+  CodexQuotaExceeded: 'quota', // falha do Codex reconhecida como fim de cota pelo hook
   StopFailure: 'error', // ou 'quota', conforme o tipo do erro (abaixo)
 };
 
