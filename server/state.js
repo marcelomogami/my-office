@@ -35,8 +35,11 @@ const STATUS_OF = {
 // Tipos de erro do StopFailure que querem dizer "acabou a cota".
 const QUOTA_ERRORS = new Set(['rate_limit', 'billing_error']);
 
-// Status que, sem evento por `awayAfterMs`, vão embora da sala. Erro e cota
-// não vão para o café: ficam à vista até a sessão voltar a agir.
+// Status que vão descansar depois de `idleAfterMs` sem evento: pronto, erro e
+// cota seguem a mesma regra (descansa, vai embora, sai da lista).
+const CAN_REST = new Set(['done', 'error', 'quota']);
+
+// Status que, sem evento por `awayAfterMs`, vão embora da sala.
 const CAN_LEAVE = new Set(['idle', 'error', 'quota']);
 
 // Processo ainda existe? EPERM quer dizer que existe, só não é nosso.
@@ -130,7 +133,7 @@ export function createState({
     return isNew || agentChanged || before !== status || (status !== 'working' && previousSince !== s.since);
   }
 
-  // "Pronto" há mais de `idleAfterMs` vira ocioso, ocioso há mais de
+  // Pronto, erro ou cota há mais de `idleAfterMs` vira ocioso, ocioso há mais de
   // `awayAfterMs` (desde o último evento) vai embora, e sessão cujo processo
   // morreu vai embora na hora; devolve true se algo mudou.
   function tick() {
@@ -142,7 +145,7 @@ export function createState({
       }
       // `since` é o último evento: os dois prazos contam a partir dele
       const quiet = now() - s.since;
-      if (s.status === 'done' && quiet >= idleAfterMs) {
+      if (CAN_REST.has(s.status) && quiet >= idleAfterMs) {
         s.status = 'idle';
         changed = true;
       }

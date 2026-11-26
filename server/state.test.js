@@ -168,12 +168,13 @@ test('StopFailure: cota para rate_limit e billing_error, erro para o resto', () 
   assert.deepEqual(state.list().map((s) => s.status), ['quota', 'quota', 'error', 'error']);
 });
 
-test('erro e cota não vão para o café, mas vão embora depois de 4 horas', () => {
-  const { state, ev, advance } = setup();
+test('cota descansa, vai embora e volta ao agir', () => {
+  const { state, advance } = setup();
   state.event({ session_id: 'a', cwd: `${P}/personal/a`, event: 'StopFailure', error: 'rate_limit' });
-  advance(1000);
-  assert.equal(state.tick(), false);
   assert.equal(state.list()[0].status, 'quota');
+  advance(1000);
+  assert.equal(state.tick(), true);
+  assert.equal(state.list()[0].status, 'idle');
   advance(4000);
   state.tick();
   assert.equal(state.list()[0].status, 'away');
@@ -326,4 +327,17 @@ test('sessão aberta no mesmo projeto continua com sufixo', () => {
   ev('a', 'SessionStart');
   ev('b', 'SessionStart');
   assert.deepEqual(state.list().map((s) => s.name), ['my-office', 'my-office (2)']);
+});
+
+test('erro descansa depois do mesmo prazo do pronto', () => {
+  const { state, ev, advance } = setup();
+  ev('a', 'CodexModelFailed');
+  advance(999);
+  assert.equal(state.tick(), false);
+  assert.equal(state.list()[0].status, 'error');
+  advance(1);
+  assert.equal(state.tick(), true);
+  assert.equal(state.list()[0].status, 'idle');
+  ev('a', 'CodexModelStarted');
+  assert.equal(state.list()[0].status, 'working');
 });
