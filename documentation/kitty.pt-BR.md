@@ -9,7 +9,6 @@ O escritório 2 é um cliente de visualização do my-office para o rodapé de u
 - O backend Node recebe eventos locais dos hooks e fornece a lista de sessões em `GET /api/stream`.
 - `tools/dock/office.py` mantém uma conexão com esse stream, monta a sala e envia os quadros ao Kitty. Se a conexão cair, ele tenta novamente.
 - Os móveis vêm de `assets/office/` e os balões e ícones de `assets/ui/`, com os mesmos mapas do escritório 1 (`default.json`, uma célula inteira por item); `tools/dock/sheets.py` os carrega. Os personagens ainda vêm de `assets/pixel-office-2dpig/PixelOfficeAssetsNew3.png`, mapeados em `tools/dock/frames.json`.
-- `src/dock-preview/main.js` e `dock-preview.html` mostram uma prévia PixiJS do layout, útil para ajustar a disposição. A prévia não é o renderizador do terminal.
 
 O escritório 1 e o dock podem receber o mesmo stream simultaneamente. Não é necessário manter a página do escritório 1 aberta. O backend e os hooks são compartilhados; o renderizador do dock não envia comandos aos agentes.
 
