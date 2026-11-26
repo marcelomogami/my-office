@@ -4,6 +4,7 @@ import argparse
 import base64
 import io
 import json
+import os
 import queue
 import random
 import sys
@@ -16,7 +17,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 from session_panel import compose
-from sheets import BOSS, FACES, crop, frame, seated_at
+from sheets import BOSS, CAST, FACES, crop, frame, seated_at
 
 WIDTH, HEIGHT, SCALE = 478, 72, 2
 DESKS = ('1', '2', '3', '4', '5', '6')
@@ -153,6 +154,30 @@ def render(sessions, seats, phase=0, rest_seats=None):
     return compose(room, sessions, seats)
 
 
+def rest_demo(chosen=()):
+    """Um personagem em cada lugar de descanso, na ordem dos números, para
+    conferir as posições. `chosen` escolhe quem fica nos primeiros lugares."""
+    order = list(dict.fromkeys([c for c in chosen if c in FACES] + list(CAST)))
+    # com menos personagens que lugares, repete do começo
+    skins = [order[i % len(order)] for i in range(len(REST))]
+    sessions = [{'name': f'lugar {i + 1}', 'skin': cid, 'status': 'idle', 'seat': None, 'face': cid}
+                for i, cid in enumerate(skins)]
+    return sessions, {s['name']: i for i, s in enumerate(sessions)}
+
+
+def watch_and_show(sessions, rest_seats):
+    """Mostra a demonstração e reinicia o processo quando o código do dock muda."""
+    files = list(Path(__file__).parent.glob('*.py'))
+    stamp = lambda: [f.stat().st_mtime for f in files]
+    start = stamp()
+    send_image(render(sessions, {}, 0, rest_seats))
+    while stamp() == start:
+        time.sleep(.3)
+    sys.stdout.write('\x1b_Ga=d,d=I,i=1,q=2\x1b\\')
+    sys.stdout.flush()
+    os.execv(sys.executable, [sys.executable, *sys.argv])
+
+
 def stream(url, events):
     while True:
         try:
@@ -187,12 +212,24 @@ def main():
     parser.add_argument('--url', default='http://127.0.0.1:5199/api/stream')
     parser.add_argument('--png', type=Path, help='Gera um quadro vazio para inspeção')
     parser.add_argument('--test-idle-seconds', type=float, help='Prazo temporário de descanso apenas no dock')
+    parser.add_argument('--descanso', nargs='?', const='', metavar='IDS',
+                        help='Demonstração: um personagem em cada lugar de descanso (ex.: char3,char1), '
+                             'recarregada quando o código muda')
     args = parser.parse_args()
+    demo = rest_demo(args.descanso.split(',')) if args.descanso is not None else None
     if args.png:
-        render([],{}).save(args.png)
+        (render(demo[0], {}, 0, demo[1]) if demo else render([], {})).save(args.png)
         return
     if not sys.stdout.isatty():
         parser.error('execute dentro de um terminal Kitty')
+    if demo:
+        sys.stdout.write('\x1b[?25l\x1b[2J')
+        try:
+            watch_and_show(*demo)
+        except KeyboardInterrupt:
+            sys.stdout.write('\x1b_Ga=d,d=I,i=1,q=2\x1b\\\x1b[?25h')
+            sys.stdout.flush()
+        return
     events = queue.Queue()
     threading.Thread(target=stream, args=(args.url,events), daemon=True).start()
     sessions, raw_sessions, seats, rest_seats, phase = [], [], {}, {}, 0
