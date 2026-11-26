@@ -112,7 +112,7 @@ Adicione as entradas abaixo a `~/.claude/settings.json`. O script `tools/hook.sh
 }
 ```
 
-O PID permite que o backend remova uma sessão quando seu processo deixa de existir, inclusive se não houver `SessionEnd`. O `StopFailure` depende de suporte na versão instalada. Consulte a [referência de hooks do Claude Code](https://code.claude.com/docs/en/hooks) para escopos, eventos e regras de configuração.
+O PID permite que o backend perceba que a sessão terminou quando seu processo deixa de existir, inclusive se não houver `SessionEnd`. A sessão fechada sai da sala e continua na lista como "foi embora" por 8 horas. O `StopFailure` depende de suporte na versão instalada. Consulte a [referência de hooks do Claude Code](https://code.claude.com/docs/en/hooks) para escopos, eventos e regras de configuração.
 
 ## Codex
 
@@ -229,7 +229,7 @@ No Codex, revise e confie nas definições novas ou alteradas antes do uso. Na C
 
 `PreModelRequest` indica trabalho e `PostModelRequest` com resultado de falha indica erro. Uma tentativa posterior volta ao estado trabalhando. A identificação específica de cota do Codex ainda não está disponível. `Interrupt` indica pronto e `SessionEnd` remove a sessão quando esse evento é recebido.
 
-Para identificar algumas saídas sem `SessionEnd`, o backend consulta os identificadores de sessões carregadas no Codex App Server local, por padrão em `ws://127.0.0.1:8767`; `MY_OFFICE_CODEX_WS` altera o endereço. Ele remove somente sessões que já foram confirmadas naquele servidor e estão ausentes em duas consultas. Se o servidor estiver indisponível ou a sessão nunca tiver sido confirmada nele, essa verificação não prova que ela terminou; continuam valendo as regras de inatividade.
+Para identificar algumas saídas sem `SessionEnd`, o backend consulta os identificadores de sessões carregadas no Codex App Server local, por padrão em `ws://127.0.0.1:8767`; `MY_OFFICE_CODEX_WS` altera o endereço. Ele marca como encerradas somente sessões que já foram confirmadas naquele servidor e estão ausentes em duas consultas. Se o servidor estiver indisponível ou a sessão nunca tiver sido confirmada nele, essa verificação não prova que ela terminou; continuam valendo as regras de inatividade.
 
 ## Testar sem interferir no serviço
 

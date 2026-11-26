@@ -9,7 +9,9 @@ import { projectName, uniqueName } from './names.js';
 
 export const IDLE_AFTER_MS = 10 * 60 * 1000;
 // Sem atividade por tanto tempo, o personagem vai embora: sai da sala e
-// libera a baia; após oito horas sem atividade, sai também da lista.
+// libera a baia; após oito horas sem atividade, sai também da lista. Sessão
+// fechada (SessionEnd, processo encerrado ou Codex ausente no App Server) vai
+// embora na hora e fica na lista pelo mesmo prazo, contado do fechamento.
 export const AWAY_AFTER_MS = 4 * 60 * 60 * 1000;
 export const REMOVE_AFTER_MS = 8 * 60 * 60 * 1000;
 export const HOME_OFFICE_REMOVE_AFTER_MS = 60 * 60 * 1000;
@@ -49,7 +51,7 @@ export function isAlive(pid) {
 
 // `saved`: sessões gravadas antes de um reinício do backend (ver snapshot()).
 // `pid` é o processo do Claude Code da sessão: quando ele some (terminal
-// fechado sem SessionEnd), a sessão sai da sala no próximo tick.
+// fechado sem SessionEnd), a sessão vai embora no próximo tick.
 export function createState({
   seatOrder,
   memory,
@@ -76,13 +78,29 @@ export function createState({
     if (result.changed) onMemoryChange(memory);
   }
 
+  // Sessão fechada: sai da sala e libera a baia, mas continua na lista como
+  // "foi embora" até `removeAfterMs` depois do fechamento. Quem chama arruma
+  // as baias.
+  function leave(id, s) {
+    codexSeen.delete(id);
+    codexMisses.delete(id);
+    delete s.pid;
+    if (s.status === 'away') return false;
+    s.status = 'away';
+    s.since = now();
+    return true;
+  }
+
+  // Nome do projeto sem o sufixo de repetição: "my-office (2)" -> "my-office".
+  const baseName = (name) => name.replace(/ \(\d+\)$/, '');
+
   // Aplica um evento; devolve true se a lista mudou.
   function event({ session_id: id, cwd, event: name, pid, error, agent }) {
     revisions.set(id, (revisions.get(id) ?? 0) + 1);
     codexMisses.delete(id);
     if (name === 'SessionEnd') {
-      codexSeen.delete(id);
-      if (!sessions.delete(id)) return false;
+      const s = sessions.get(id);
+      if (!s || !leave(id, s)) return false;
       arrange();
       return true;
     }
@@ -90,8 +108,12 @@ export function createState({
     const isNew = !s;
     if (isNew) {
       codexSeen.delete(id);
+      // Sessão nova no mesmo projeto substitui quem já foi embora dali, para
+      // não virar "nome (2)" por causa de uma sessão que já fechou.
+      const project = projectName(cwd);
+      for (const [other, x] of sessions) if (x.status === 'away' && baseName(x.name) === project) sessions.delete(other);
       const taken = new Set([...sessions.values()].map((x) => x.name));
-      s = { name: uniqueName(projectName(cwd), taken), status: 'done', since: now(), pid };
+      s = { name: uniqueName(project, taken), status: 'done', since: now(), pid };
       sessions.set(id, s);
       arrange();
     }
@@ -110,13 +132,12 @@ export function createState({
 
   // "Pronto" há mais de `idleAfterMs` vira ocioso, ocioso há mais de
   // `awayAfterMs` (desde o último evento) vai embora, e sessão cujo processo
-  // morreu sai de vez; devolve true se algo mudou.
+  // morreu vai embora na hora; devolve true se algo mudou.
   function tick() {
     let changed = false;
     for (const [id, s] of sessions) {
       if (s.pid && !alive(s.pid)) {
-        sessions.delete(id);
-        changed = true;
+        if (leave(id, s)) changed = true;
         continue;
       }
       // `since` é o último evento: os dois prazos contam a partir dele
@@ -157,7 +178,7 @@ export function createState({
       if (!codexSeen.has(id)) continue;
       const misses = (codexMisses.get(id) ?? 0) + 1;
       codexMisses.set(id, misses);
-      if (misses >= 2) { sessions.delete(id); codexSeen.delete(id); codexMisses.delete(id); changed = true; }
+      if (misses >= 2 && leave(id, s)) changed = true;
     }
     if (changed) arrange();
     return changed;

@@ -4,6 +4,7 @@ Notable changes are grouped by published version. Complete release notes are als
 
 ## Unreleased
 
+- Closed sessions (Claude Code `SessionEnd` or ended process, Codex missing from the App Server) stay in the list as away for 8 hours instead of disappearing at once; a new session in the same project replaces them.
 - Runs backend tests, dock tests and the web build on GitHub Actions for every push and pull request.
 
 ## [0.7.1](https://github.com/marcelomogami/my-office/releases/tag/v0.7.1)
