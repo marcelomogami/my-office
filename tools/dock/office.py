@@ -17,7 +17,7 @@ from pathlib import Path
 from PIL import Image
 
 from session_panel import compose
-from sheets import BOSS, CAST, FACES, crop, frame, seated_at
+from sheets import BOSS, CAST, CONFIG_DIR, FACES, crop, frame, seated_at
 
 WIDTH, HEIGHT, SCALE = 478, 72, 2
 # Onde começa o piso e o deslocamento horizontal dos tijolos (como o
@@ -47,6 +47,51 @@ def layout(sessions):
     """
     return {s['name']: 6 - int(s['seat']) for s in sessions
             if s.get('skin') in FACES and s.get('status') != 'away' and s.get('seat') in DESKS}
+
+
+DEFAULT_REST_MOVE = 15
+
+
+def rest_move_minutes(config_dir=CONFIG_DIR):
+    """timers.restMove do config.json local (minutos; 0 desliga), como no
+    backend; sem a opção, ou com um valor inválido, o padrão."""
+    try:
+        value = json.loads((config_dir / 'config.json').read_text()).get('timers', {}).get('restMove')
+    except (OSError, ValueError, AttributeError):
+        return DEFAULT_REST_MOVE
+    valid = isinstance(value, (int, float)) and not isinstance(value, bool) and value >= 0
+    return value if valid else DEFAULT_REST_MOVE
+
+
+def next_move_at(start, minutes, rng=random):
+    """Próxima troca de lugar: entre o intervalo e um terço a mais depois de
+    `start` (segundos); None com a troca desligada. Mesma regra de src/rest.js."""
+    return start + minutes * 60 * (1 + rng.random() / 3) if minutes > 0 else None
+
+
+def move_resting(positions, moves, now, minutes, rng=random):
+    """Troca de lugar quem está descansando há tempo suficiente.
+
+    `positions`: {nome: lugar} de quem descansa; `moves`: {nome: próxima troca},
+    marcada quando a sessão entra em descanso (contando dali). O lugar novo é
+    sorteado entre os livres, nunca o mesmo; sem lugar livre, tenta depois de
+    outro intervalo. Devolve True se alguém mudou de lugar."""
+    for name in [n for n in moves if n not in positions]:
+        del moves[name]
+    changed = False
+    for name, slot in positions.items():
+        if name not in moves:
+            moves[name] = next_move_at(now, minutes, rng)
+            continue
+        if moves[name] is None or now < moves[name]:
+            continue
+        taken = set(positions.values())
+        free = [s for s in range(len(REST)) if s != slot and s not in taken]
+        if free:
+            positions[name] = rng.choice(free)
+            changed = True
+        moves[name] = next_move_at(now, minutes, rng)
+    return changed
 
 
 def rest_layout(sessions, seats, previous=None, rng=random):
@@ -256,6 +301,7 @@ def main():
     link = {'down_since': None}
     threading.Thread(target=stream, args=(args.url, events, link), daemon=True).start()
     sessions, raw_sessions, seats, rest_seats, phase = [], [], {}, {}, 0
+    rest_move, rest_moves = rest_move_minutes(), {}
     sys.stdout.write('\x1b[?25l\x1b[2J')
     try:
         needs_redraw = True
@@ -275,6 +321,8 @@ def main():
                 sessions = projected
                 seats = layout(sessions)
                 rest_seats = rest_layout(sessions, seats, rest_seats)
+                needs_redraw = True
+            if move_resting(rest_seats, rest_moves, time.time(), rest_move):
                 needs_redraw = True
             now_ms = time.time() * 1000
             timers = tuple((s['name'], int(max(0, now_ms - s['since']) // 60000))
