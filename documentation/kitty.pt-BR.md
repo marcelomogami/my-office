@@ -52,6 +52,8 @@ O prazo normal para entrar em descanso pertence ao backend, atualmente dez minut
 
 Para conferir as posições de descanso, rode `python3 tools/dock/office.py --descanso` numa aba do Kitty: cada lugar recebe um personagem, a lista mostra "lugar 1" a "lugar 8" e a imagem se atualiza sozinha quando o código do dock muda. `--descanso char3,char1` escolhe quem fica nos primeiros lugares.
 
+Do mesmo jeito, `--baias` põe um personagem em cada baia, com status variados, para conferir os balões.
+
 A lista mostra o Boss primeiro, sem status por enquanto, seguido de até oito sessões em três colunas de três cartões. Os cartões das sessões exibem avatar, nome e status. O fundo ao redor da sala e dos cartões é transparente, permitindo ver o tema do Kitty. O tempo aparece abaixo do avatar para sessões com lugar na sala; quem está em home office não exibe esse tempo. O prazo de teste não altera os indicadores de status mantidos pelo backend.
 
 ## Testes
