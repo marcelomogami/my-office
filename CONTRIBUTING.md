@@ -51,7 +51,7 @@ Add or update tests with your change. Tests that touch configuration files must 
 ## Changes and pull requests
 
 - Work on a branch with one topic, named after it (for example `feature/…`, `fix/…`, `docs/…`).
-- Keep commits focused, with a short subject in English that says what changed. Write issues, pull requests and code comments in English too.
+- Keep commits focused, with a short subject in English that says what changed. Write issues and pull requests in English too.
 - Open the pull request against `main`, explain what changed and why, and link the issue.
 - Update the documentation in **both languages**: English (`README.md`, `documentation/*.md`) and Brazilian Portuguese (`README.pt-BR.md`, `documentation/*.pt-BR.md`). Interface texts live in [`src/locales.json`](src/locales.json).
 

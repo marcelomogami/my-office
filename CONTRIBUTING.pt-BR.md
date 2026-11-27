@@ -51,7 +51,7 @@ Acrescente ou atualize testes junto com a mudança. Testes que mexem em arquivos
 ## Mudanças e pull requests
 
 - Trabalhe numa branch com um assunto só, com o nome dele (por exemplo `feature/…`, `fix/…`, `docs/…`).
-- Faça commits focados, com um assunto curto em inglês que diga o que mudou. Issues, pull requests e comentários de código também são em inglês.
+- Faça commits focados, com um assunto curto em inglês que diga o que mudou. Issues e pull requests também são em inglês.
 - Abra o pull request contra a `main`, explique o que mudou e por quê, e cite a issue.
 - Atualize a documentação **nas duas línguas**: inglês (`README.md`, `documentation/*.md`) e português (`README.pt-BR.md`, `documentation/*.pt-BR.md`). Os textos da interface ficam em [`src/locales.json`](src/locales.json).
 
