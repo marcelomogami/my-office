@@ -14,7 +14,7 @@ const ICON_OFFSET = [2, 1];
 // o balão vai para o corredor, na altura da cabeça, para não cobrir quem está
 // na baia de cima; sem ele, fica centralizado acima da cabeça.
 function frameOf({ x, y, w, bx }) {
-  if (bx !== undefined) return { bx, by: y - 14 };
+  if (bx !== undefined) return { bx, by: y - 10 };
   const hx = Math.round(x + w / 2);
   return { bx: hx - Math.floor(BW / 2), by: y - BHEIGHT };
 }

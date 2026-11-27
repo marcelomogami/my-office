@@ -4,13 +4,13 @@
   "background": {"floorY": 112, "floorX": -18},
   "seatOrder": ["1", "2", "3", "4", "5", "6"],
   "seats": {
-    "1": {"chair": [203, 169], "flip": 1, "cup": ["mugRed", 186, 167, 0], "bubbleX": 209},
-    "2": {"chair": [152, 169], "flip": 0, "cup": ["mug", 164, 167, 1], "bubbleX": 144},
-    "3": {"chair": [91, 169], "flip": 1, "cup": ["mugRed", 74, 167, 0], "bubbleX": 97},
-    "4": {"chair": [40, 169], "flip": 0, "cup": ["mugCoffee", 52, 167, 1], "bubbleX": 32},
-    "5": {"chair": [91, 199], "flip": 1, "cup": ["mugRed", 74, 197, 0], "bubbleX": 97},
-    "6": {"chair": [40, 199], "flip": 0, "cup": ["mugCoffee", 52, 197, 1], "bubbleX": 32},
-    "A": {"chair": [40, 139], "flip": 0, "cup": ["mugCoffee", 52, 137, 1], "bubbleX": 32}
+    "1": {"chair": [203, 169], "flip": 1, "cup": ["mugRed", 186, 167, 0], "bubbleX": 213},
+    "2": {"chair": [152, 169], "flip": 0, "cup": ["mug", 164, 167, 1], "bubbleX": 140},
+    "3": {"chair": [91, 169], "flip": 1, "cup": ["mugRed", 74, 167, 0], "bubbleX": 101},
+    "4": {"chair": [40, 169], "flip": 0, "cup": ["mugCoffee", 52, 167, 1], "bubbleX": 28},
+    "5": {"chair": [91, 199], "flip": 1, "cup": ["mugRed", 74, 197, 0], "bubbleX": 101},
+    "6": {"chair": [40, 199], "flip": 0, "cup": ["mugCoffee", 52, 197, 1], "bubbleX": 28},
+    "A": {"chair": [40, 139], "flip": 0, "cup": ["mugCoffee", 52, 137, 1], "bubbleX": 28}
   },
   "rest": {
     "1": {"chair": [219, 97], "flip": 1},
