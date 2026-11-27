@@ -84,14 +84,36 @@ def panel_entries(sessions):
     return [{'name': 'Boss', 'skin': BOSS, '_boss': True}, *sessions[:8]]
 
 
+STAMP = font(40, True)
+
+
+def stamp(room):
+    """A sala com um carimbo de "desconectado" por cima: caixa branca, borda
+    dupla vermelha e texto grande, um pouco inclinado, como um carimbo."""
+    room = room.copy()
+    label = t('disconnected').upper()
+    probe = ImageDraw.Draw(room)
+    left, top, right, bottom = probe.textbbox((0, 0), label, font=STAMP)
+    w, h = right - left + 56, bottom - top + 32
+    box = Image.new('RGBA', (w, h), (0, 0, 0, 0))
+    d = ImageDraw.Draw(box)
+    red = '#b13e53'
+    d.rounded_rectangle((0, 0, w - 1, h - 1), radius=8, fill='#f4f4f4', outline=red, width=5)
+    d.rounded_rectangle((9, 9, w - 10, h - 10), radius=4, outline=red, width=2)
+    d.text(((w - (right - left)) / 2 - left, (h - (bottom - top)) / 2 - top), label, font=STAMP, fill=red)
+    box = box.rotate(6, resample=Image.Resampling.BICUBIC, expand=True)
+    room.alpha_composite(box, ((room.width - box.width) // 2, (room.height - box.height) // 2))
+    return room
+
+
 def compose(room, sessions, seats, now=None, offline=False):
     """Desenha o Boss e até oito sessões em três colunas de três cartões.
 
-    Com `offline`, o cartão do Boss avisa que o dock está desconectado do
-    backend (o que aparece pode estar desatualizado)."""
+    Com `offline`, um carimbo grande sobre a sala avisa que o dock está
+    desconectado do backend (o que aparece pode estar desatualizado)."""
     now = time.time() * 1000 if now is None else now
     canvas = Image.new('RGBA', (PANEL_WIDTH, PANEL_HEIGHT), (0, 0, 0, 0))
-    canvas.alpha_composite(room, (0, TOP))
+    canvas.alpha_composite(stamp(room) if offline else room, (0, TOP))
     draw = ImageDraw.Draw(canvas)
     for i, session in enumerate(panel_entries(sessions)):
         col, row = divmod(i, 3)
@@ -114,11 +136,6 @@ def compose(room, sessions, seats, now=None, offline=False):
         else:
             draw.text((x + 44, y + 5), fit_text(draw, title, BOLD, 133), font=BOLD, fill='#e8eff1')
         if session.get('_boss'):
-            if offline:
-                label = fit_text(draw, t('disconnected'), BOLD, 128)
-                lw = draw.textlength(label, font=BOLD)
-                draw.rounded_rectangle((x + 44, y + 22, x + 44 + lw + 11, y + 37), radius=7, fill='#b13e53')
-                draw.text((x + 50, y + 23), label, font=BOLD, fill='#ffffff')
             continue
         icon_name = ICONS.get(status, 'iconWork3')
         icon = crop(icon_name)
