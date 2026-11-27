@@ -68,9 +68,17 @@ class OfficeTest(unittest.TestCase):
 
 
 class RestDemoTest(unittest.TestCase):
+    def test_desk_demo_fills_every_desk(self):
+        from office import desk_demo
+        sessions, seats, rest = desk_demo(['char2'])
+        self.assertEqual(sorted(seats.values()), [0, 1, 2, 3, 4, 5])
+        self.assertEqual(sessions[0]['skin'], 'char2')
+        self.assertEqual(rest, {})
+
     def test_rest_demo_fills_every_spot_in_order(self):
         from office import CAST, REST, rest_demo
-        sessions, positions = rest_demo(['char3', 'desconhecido', 'char3'])
+        sessions, seats, positions = rest_demo(['char3', 'desconhecido', 'char3'])
+        self.assertEqual(seats, {})
         self.assertEqual(len(sessions), len(REST))
         self.assertEqual(sessions[0]['skin'], 'char3')
         self.assertEqual(len({s['skin'] for s in sessions}), min(len(REST), len(CAST)))

@@ -52,6 +52,8 @@ The normal delay before rest belongs to the backend and is currently ten minutes
 
 To check the rest positions, run `python3 tools/dock/office.py --descanso` in a Kitty tab: every spot gets a character, the list shows "lugar 1" to "lugar 8", and the image refreshes by itself when the dock code changes. `--descanso char3,char1` picks who takes the first spots.
 
+In the same way, `--baias` puts a character in every desk, with mixed statuses, to check the bubbles.
+
 The list shows the Boss first, without a status for now, followed by up to eight sessions in three columns of three cards. Session cards show avatar, name, and status. The background around the room and cards is transparent so the Kitty theme shows through. Elapsed time appears under the avatar for sessions with a room workstation; home-office sessions do not show it. The test delay does not change backend status indicators.
 
 ## Tests

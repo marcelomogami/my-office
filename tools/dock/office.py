@@ -98,7 +98,7 @@ def render(sessions, seats, phase=0, rest_seats=None):
             return
         x, y, w = anchor
         flip = bx + 6 > x + w/2
-        by = max(0, y - 14)
+        by = max(0, y - 8)
         sprite('bubbleThought', bx, by, flip)
         icons = STATUSES[status]
         sprite(icons[phase % len(icons)], bx + 2, by + 1)
@@ -129,7 +129,7 @@ def render(sessions, seats, phase=0, rest_seats=None):
             session = next((live[n] for n, slot in seats.items() if slot == i*2+side), None)
             if session and session['status'] != 'idle':
                 anchor = person(session['skin'],x+(58 if side else 7),y+7,bool(side))
-                anchors.append((anchor,session['status'],x+(75 if side else -7)))
+                anchors.append((anchor,session['status'],x+(68 if side else -5)))
             if side == 0:
                 sprite('computerSide1',x+21,y+5)
                 if session: sprite('mugCoffee',x+19,y+7,True)
@@ -160,15 +160,25 @@ def rest_demo(chosen=()):
     skins = [order[i % len(order)] for i in range(len(REST))]
     sessions = [{'name': f'lugar {i + 1}', 'skin': cid, 'status': 'idle', 'seat': None, 'face': cid}
                 for i, cid in enumerate(skins)]
-    return sessions, {s['name']: i for i, s in enumerate(sessions)}
+    return sessions, {}, {s['name']: i for i, s in enumerate(sessions)}
 
 
-def watch_and_show(sessions, rest_seats):
+def desk_demo(chosen=()):
+    """Um personagem em cada baia, com status variados, para conferir os
+    balões. `chosen` escolhe quem fica nas primeiras baias."""
+    order = list(dict.fromkeys([c for c in chosen if c in FACES] + list(CAST)))
+    statuses = ('working', 'done', 'error', 'quota')
+    sessions = [{'name': f'baia {d}', 'skin': order[i % len(order)], 'status': statuses[i % len(statuses)],
+                 'seat': d, 'face': order[i % len(order)]} for i, d in enumerate(DESKS)]
+    return sessions, layout(sessions), {}
+
+
+def watch_and_show(sessions, seats, rest_seats):
     """Mostra a demonstração e reinicia o processo quando o código do dock muda."""
     files = list(Path(__file__).parent.glob('*.py'))
     stamp = lambda: [f.stat().st_mtime for f in files]
     start = stamp()
-    send_image(render(sessions, {}, 0, rest_seats))
+    send_image(render(sessions, seats, 0, rest_seats))
     while stamp() == start:
         time.sleep(.3)
     sys.stdout.write('\x1b_Ga=d,d=I,i=1,q=2\x1b\\')
@@ -213,10 +223,13 @@ def main():
     parser.add_argument('--descanso', nargs='?', const='', metavar='IDS',
                         help='Demonstração: um personagem em cada lugar de descanso (ex.: char3,char1), '
                              'recarregada quando o código muda')
+    parser.add_argument('--baias', nargs='?', const='', metavar='IDS',
+                        help='Demonstração: um personagem em cada baia, com balões de status variados')
     args = parser.parse_args()
-    demo = rest_demo(args.descanso.split(',')) if args.descanso is not None else None
+    demo = (rest_demo(args.descanso.split(',')) if args.descanso is not None
+            else desk_demo(args.baias.split(',')) if args.baias is not None else None)
     if args.png:
-        (render(demo[0], {}, 0, demo[1]) if demo else render([], {})).save(args.png)
+        (render(demo[0], demo[1], 0, demo[2]) if demo else render([], {})).save(args.png)
         return
     if not sys.stdout.isatty():
         parser.error('execute dentro de um terminal Kitty')
