@@ -1,12 +1,14 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { CONFIG_DIR } from './characters.js';
+import { DEFAULT_LANGUAGE, LANGUAGES, normalizeLanguage } from '../src/i18n.js';
 
 // Configuração local (config.json na pasta de configuração, a mesma dos
-// personagens custom), fora do repositório. Hoje ela só diz quais projetos
-// têm personagem e baia fixos:
+// personagens custom), fora do repositório. Ela diz o idioma da interface e
+// quais projetos têm personagem e baia fixos:
 //
-//   { "projects": { "<projeto>": { "character": "<id>", "desk": <número> } } }
+//   { "language": "pt-BR",
+//     "projects": { "<projeto>": { "character": "<id>", "desk": <número> } } }
 //
 // `character` e `desk` são opcionais. O resultado é o mapa de sessões fixas
 // de src/sessions.js: { projeto: { skin, seat } }, com a baia como texto
@@ -58,22 +60,42 @@ export function parseConfig(data, { cast, desks, log = console.error, file = 'co
   return fixed;
 }
 
-// Lê <configDir>/config.json. Sem arquivo, não há sessões fixas.
-export function loadConfig({ configDir = CONFIG_DIR, cast, desks, log = console.error }) {
+// Lê <configDir>/config.json; null sem arquivo ou com JSON inválido.
+function readConfig(configDir, log) {
   const file = join(configDir, 'config.json');
   let text;
   try {
     text = readFileSync(file, 'utf8');
   } catch (err) {
     if (err.code !== 'ENOENT') log(`my-office: não deu para ler ${file}: ${err.message}`);
-    return {};
+    return null;
   }
-  let data;
   try {
-    data = JSON.parse(text);
+    return { data: JSON.parse(text), file };
   } catch (err) {
     log(`my-office: ${file}: JSON inválido (${err.message}); configuração ignorada`);
-    return {};
+    return null;
   }
-  return parseConfig(data, { cast, desks, log, file });
+}
+
+// Sessões fixas do config.json. Sem arquivo, não há sessões fixas.
+export function loadConfig({ configDir = CONFIG_DIR, cast, desks, log = console.error }) {
+  const config = readConfig(configDir, log);
+  return config ? parseConfig(config.data, { cast, desks, log, file: config.file }) : {};
+}
+
+// Idioma da interface: "language" no config.json, sem diferenciar maiúsculas
+// ("pt-BR" ou "pt-br"). Sem a opção, ou com um idioma sem tradução, inglês.
+export function parseLanguage(data, { log = console.error, file = 'config.json' } = {}) {
+  const value = data?.language;
+  if (value === undefined) return DEFAULT_LANGUAGE;
+  const language = normalizeLanguage(value);
+  if (language) return language;
+  log(`my-office: ${file}: idioma desconhecido ${JSON.stringify(value)} (disponíveis: ${LANGUAGES.join(', ')}); usando ${DEFAULT_LANGUAGE}`);
+  return DEFAULT_LANGUAGE;
+}
+
+export function loadLanguage({ configDir = CONFIG_DIR, log = console.error } = {}) {
+  const config = readConfig(configDir, log);
+  return config ? parseLanguage(config.data, { log, file: config.file }) : DEFAULT_LANGUAGE;
 }

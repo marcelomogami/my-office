@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,16 +7,16 @@
   <title>My Office</title>
 </head>
 <body>
-  <header class="topbar"><div class="brand"><span class="brand-icon" aria-hidden="true">▦</span><span>my office</span></div><span class="top-label">UM ESPAÇO PARA SUAS IDEIAS</span></header>
+  <header class="topbar"><div class="brand"><span class="brand-icon" aria-hidden="true">▦</span><span>my office</span></div><span class="top-label" data-i18n="tagline"></span></header>
   <main class="app">
     <div class="office-wrap">
-      <div id="office" role="img" aria-label="Escritório em pixel art; cada personagem representa uma sessão de agente aberta."></div>
+      <div id="office" role="img" data-i18n-label="officeLabel"></div>
       <div id="tooltip" class="tooltip" hidden></div>
     </div>
-    <aside class="sessions" aria-label="Sessões abertas">
-      <p class="sessions-title">GERENTE</p>
+    <aside class="sessions" data-i18n-label="sessionsLabel">
+      <p class="sessions-title" data-i18n="manager"></p>
       <ul id="manager"></ul>
-      <p class="sessions-title">SESSÕES</p>
+      <p class="sessions-title" data-i18n="sessions"></p>
       <ul id="sessions"></ul>
     </aside>
   </main>

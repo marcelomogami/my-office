@@ -108,4 +108,17 @@ class CustomSheetTest(unittest.TestCase):
         self.assertFalse(office_adds)
 
 
+class TranslationTest(unittest.TestCase):
+    def test_dock_uses_config_language_with_english_default(self):
+        import json, tempfile
+        from pathlib import Path
+        from session_panel import translator
+        with tempfile.TemporaryDirectory() as config:
+            self.assertEqual(translator(Path(config))('short.idle'), 'resting')
+            (Path(config) / 'config.json').write_text(json.dumps({'language': 'pt-br'}))
+            pt = translator(Path(config))
+            self.assertEqual(pt('short.idle'), 'descansando')
+            self.assertEqual(pt('chave'), 'chave')
+
+
 if __name__ == '__main__': unittest.main()

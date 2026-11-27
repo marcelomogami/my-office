@@ -89,6 +89,19 @@ As baias são numeradas a partir do Boss, da direita para a esquerda e de cima p
 
 O backend lê o `config.json` ao iniciar; reinicie-o depois de uma mudança.
 
+## Idioma
+
+A interface aparece em inglês por padrão. Para outro idioma, use `language` no mesmo `config.json`:
+
+```json
+{
+  "language": "pt-BR",
+  "projects": {}
+}
+```
+
+Os idiomas disponíveis são `en` e `pt-BR` (sem diferenciar maiúsculas). As traduções ficam em [`src/locales.json`](src/locales.json), lido pela página web e pelo dock; um texto que falte num idioma aparece em inglês. Depois de mudar o idioma, reinicie o backend e reabra o dock.
+
 ## Desenvolvimento
 
 Os testes rodam automaticamente no GitHub Actions a cada push e pull request ([`.github/workflows/tests.yml`](.github/workflows/tests.yml)). Para rodar localmente:

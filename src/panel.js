@@ -1,6 +1,7 @@
 import { drawable } from './sessions.js';
 import { STATUS } from './status.js';
 import { elapsedLabel } from './elapsed.js';
+import { translator } from './i18n.js';
 
 // O rosto do home office é apenas visual e pode repetir o de outra sessão
 // não fixa, mas só usa o personagem de uma sessão fixa se todos forem fixos.
@@ -15,12 +16,14 @@ export function panelFace(name, assigned, remembered, cast, fixed = {}, random =
 }
 
 // Em home office, a indicação de pronto permanece até voltar a trabalhar.
-export function panelDetails(name, status, seated, since, now = Date.now()) {
+// `t`: a função de tradução (src/i18n.js).
+export function panelDetails(name, status, seated, since, now = Date.now(), t = translator()) {
   const home = !seated && status !== 'away';
   const visibleStatus = home && status === 'idle' ? 'done' : status;
-  const shortLabel = { done: '👍 pronto', idle: '☕ descansando' };
   const st = STATUS[visibleStatus];
-  const text = shortLabel[visibleStatus] ?? `${st.emoji} ${st.label}`;
+  // pronto e descansando usam o texto curto; os outros, o do balão
+  const label = ['done', 'idle'].includes(visibleStatus) ? t(`short.${visibleStatus}`) : t(`status.${visibleStatus}`);
+  const text = `${st.emoji} ${label}`;
   const elapsed = !home && ['done', 'idle', 'error', 'quota'].includes(status) ? elapsedLabel(since, now) : '';
-  return { title: home ? `${name} (home office)` : name, text: elapsed ? `${text} · ${elapsed}` : text };
+  return { title: home ? `${name} (${t('homeOffice')})` : name, text: elapsed ? `${text} · ${elapsed}` : text };
 }
