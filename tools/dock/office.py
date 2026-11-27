@@ -34,7 +34,7 @@ PAIR = [(151, 'officeBlue', 'officeGrey', 'stickies', 'flagBR'),
         (244, 'officeOrange', 'officeGreen', 'posterSun', 'doc1'),
         (337, 'officeYellow', 'officeWhite', 'posterBlue', 'flagUS')]
 STATUSES = {'working': ('iconWork1', 'iconWork2', 'iconWork3'), 'done': ('iconDone',),
-            'error': ('iconError',), 'quota': ('iconQuota',)}
+            'error': ('iconError',), 'quota': ('iconQuota',), 'stress': ('iconAnger',)}
 
 
 def layout(sessions):
@@ -139,7 +139,10 @@ def render(sessions, seats, phase=0, rest_seats=None):
         sprite('partition',x,y+30)
     x,y=430,6
     for item in [('partitionSingle',x,y,True),('divider',x,y+5),('officeBlue',x+17,y+5,True),('desk',x+4,y+11,True)]: sprite(*item)
-    person(BOSS,x+22,y+7,True)
+    boss = person(BOSS,x+22,y+7,True)
+    # Balão do Boss, como na página web: à direita dele, pela mesma regra das
+    # baias da direita (2px antes do fim do personagem).
+    anchors.append((boss, 'stress', boss[0] + boss[2] - 2))
     for item in [('computerSide1',x-5,y+5,True),('mugCoffee',x+5,y+7),('partitionSingle',x,y+30,True),
                  ('plant',42,40),('sofaGreen',58,40)]: sprite(*item)
     rest((6, 7))
