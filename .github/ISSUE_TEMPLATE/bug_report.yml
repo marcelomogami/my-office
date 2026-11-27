@@ -1,0 +1,66 @@
+name: Bug report
+description: Something in the office does not work as expected.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Please do not paste prompts, responses, credentials or other private content: My Office only needs session metadata to debug.
+  - type: input
+    id: version
+    attributes:
+      label: My Office version
+      description: The release tag or commit (for example v0.9.0).
+    validations:
+      required: true
+  - type: dropdown
+    id: agent
+    attributes:
+      label: Agent
+      multiple: true
+      options:
+        - Claude Code
+        - Codex
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: agent-version
+    attributes:
+      label: Agent version
+      description: For example the output of `claude --version` or `codex --version`.
+  - type: dropdown
+    id: interface
+    attributes:
+      label: Where does it happen?
+      multiple: true
+      options:
+        - Web office
+        - Kitty dock
+        - Hooks or backend
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: Operating system
+      description: For example Arch Linux, Ubuntu 24.04, macOS 15.
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Screenshots and backend log lines (`my-office:` messages) help. Remove anything private first.
+    validations:
+      required: true
