@@ -20,7 +20,7 @@ function setup({ dead = new Set(), saved = [] } = {}) {
   let saves = 0;
   const state = createState({
     seatOrder: ORDER, memory, onMemoryChange: () => saves++, now: () => t, idleAfterMs: 1000,
-    alive: (pid) => !dead.has(pid), saved, awayAfterMs: 5000, cast: CAST, fixed: FIXED,
+    alive: (pid) => !dead.has(pid), saved, awayAfterMs: 4000, cast: CAST, fixed: FIXED,
   });
   const ev = (id, event, cwd = `${P}/personal/my-office`) => state.event({ session_id: id, cwd, event });
   return { state, ev, memory, dead, advance: (ms) => (t += ms), saves: () => saves };
@@ -183,7 +183,8 @@ test('4 horas (aqui, 5 s) sem evento: vai embora, libera a baia e volta ao agir'
   ev('b', 'UserPromptSubmit', `${P}/personal/outro`); // b continua ativo
   assert.equal(state.tick(), true);
   const [a, b] = state.list();
-  assert.deepEqual(a, { name: 'my-office', status: 'away', since: 0, agent: 'claude-code', skin: null, seat: null, face: null });
+  // a saída da lista passa a contar da hora em que foi embora
+  assert.deepEqual(a, { name: 'my-office', status: 'away', since: 5000, agent: 'claude-code', skin: null, seat: null, face: null });
   assert.equal(b.status, 'working');
   assert.equal(ev('a', 'UserPromptSubmit'), true);
   const back = state.list()[0];
@@ -324,12 +325,12 @@ test('identificação de Codex sobrevive ao snapshot', () => {
   assert.equal(again.state.codexCandidates().has('a'), true);
 });
 
-test('sessão fechada fica na lista como "foi embora" e sai depois de 8 horas', () => {
+test('sessão fechada fica na lista como "foi embora" e sai depois de 4 horas', () => {
   const { state, ev, advance } = setup();
   ev('a', 'SessionStart');
   advance(60_000);
   ev('a', 'SessionEnd');
-  advance(8 * 3600_000 - 1);
+  advance(4 * 3600_000 - 1);
   state.tick();
   assert.equal(state.list()[0].status, 'away');
   advance(1);
@@ -391,4 +392,24 @@ test('a lista diz o agente de cada sessão, com cor em harnesses.json', async ()
   const agents = Object.fromEntries(state.list().map((s) => [s.name, s.agent]));
   assert.deepEqual(agents, { 'my-office': 'claude-code', website: 'codex' });
   for (const agent of Object.values(agents)) assert.match(harnesses[agent].color, /^#[0-9a-f]{6}$/i);
+});
+
+test('cada prazo conta a partir do passo anterior: descansa, sai da sala, sai da lista', () => {
+  const { state, ev, advance } = setup(); // descansar 1 s, sair da sala 4 s depois, sair da lista 4 h depois
+  ev('a', 'Stop');
+  advance(1000);
+  state.tick();
+  assert.equal(state.list()[0].status, 'idle');
+  advance(3999);
+  state.tick();
+  assert.equal(state.list()[0].status, 'idle');
+  advance(1);
+  state.tick();
+  assert.equal(state.list()[0].status, 'away');
+  advance(4 * 3600_000 - 1);
+  state.tick();
+  assert.equal(state.list().length, 1);
+  advance(1);
+  state.tick();
+  assert.deepEqual(state.list(), []);
 });

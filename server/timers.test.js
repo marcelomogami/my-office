@@ -22,15 +22,11 @@ test('valores inválidos ou desconhecidos ficam no padrão, com aviso', () => {
   assert.deepEqual(parseTimers({ timers: [] }, { log: quiet }), DEFAULT_TIMERS);
 });
 
-test('a ordem do ciclo é fixa: o valor que a quebra volta ao padrão', () => {
+test('qualquer valor positivo vale, sem regra de ordem entre os tempos', () => {
   const logs = [];
-  // descansar depois de sair da sala: o descanso personalizado é ignorado
-  assert.equal(parseTimers({ timers: { rest: 300 } }, { log: (m) => logs.push(m) }).rest, 10);
-  // sair da sala depois de sair da lista: a saída da lista personalizada é ignorada
-  assert.equal(parseTimers({ timers: { leaveList: 100 } }, { log: (m) => logs.push(m) }).leaveList, 480);
-  assert.equal(logs.length, 2);
-  // valores personalizados que respeitam a ordem ficam
-  assert.deepEqual(parseTimers({ timers: { rest: 1, leaveRoom: 2, leaveList: 3 } }), { ...DEFAULT_TIMERS, rest: 1, leaveRoom: 2, leaveList: 3 });
+  assert.deepEqual(parseTimers({ timers: { rest: 300, leaveRoom: 1, leaveList: 2 } }, { log: (m) => logs.push(m) }),
+    { ...DEFAULT_TIMERS, rest: 300, leaveRoom: 1, leaveList: 2 });
+  assert.equal(logs.length, 0);
 });
 
 test('o backend usa os tempos do config.json', () => {
@@ -44,6 +40,9 @@ test('o backend usa os tempos do config.json', () => {
     office.state.tick();
     assert.equal(office.state.list()[0].status, 'idle');
     t = 120_000;
+    office.state.tick();
+    assert.equal(office.state.list()[0].status, 'idle'); // sair da sala conta do descanso
+    t = 180_000;
     office.state.tick();
     assert.equal(office.state.list()[0].status, 'away');
   } finally {

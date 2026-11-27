@@ -131,7 +131,7 @@ Add the entries below to `~/.claude/settings.json`. `tools/hook.sh` reads event 
 }
 ```
 
-The PID lets the backend detect that a session ended when its process disappears, including when there is no `SessionEnd`. A closed session leaves the room and stays in the list as away for 8 hours. `StopFailure` requires support in the installed version. See the [Claude Code hooks reference](https://code.claude.com/docs/en/hooks) for scopes, events, and configuration rules.
+The PID lets the backend detect that a session ended when its process disappears, including when there is no `SessionEnd`. A closed session leaves the room and stays in the list as away for 4 hours (`timers.leaveList`). `StopFailure` requires support in the installed version. See the [Claude Code hooks reference](https://code.claude.com/docs/en/hooks) for scopes, events, and configuration rules.
 
 ## Codex
 

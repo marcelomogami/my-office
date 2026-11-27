@@ -101,18 +101,17 @@ export function loadLanguage({ configDir = CONFIG_DIR, log = console.error } = {
   return config ? parseLanguage(config.data, { log, file: config.file }) : DEFAULT_LANGUAGE;
 }
 
-// Tempos do ciclo das sessões, em minutos. Cada um é opcional: o que faltar,
-// ou for inválido, fica com o padrão.
-//   rest                 pronto, erro ou cota sem evento: vai descansar
-//   leaveRoom            sem evento: sai da sala e libera a baia
-//   leaveList            fechada ou fora da sala: sai também da lista
+// Tempos do ciclo das sessões, em minutos, cada um contado a partir do passo
+// anterior. Cada um é opcional: o que faltar, ou for inválido, fica com o
+// padrão. Com os padrões, a sessão sai da sala 4 horas e da lista 8 horas
+// depois da última atividade.
+//   rest                 sem evento (pronto, erro ou cota): vai descansar
+//   leaveRoom            descansando: sai da sala e libera a baia
+//   leaveList            fora da sala (ou fechada): sai também da lista
 //   homeOfficeLeaveList  home office sem evento: sai da lista
 //   restMove             descansando: troca de lugar (sorteio entre o valor e
 //                        um terço a mais); 0 desliga
-// A ordem do ciclo é fixa (descansar, sair da sala, sair da lista): um valor
-// personalizado que a quebre é ignorado, com aviso.
-export const DEFAULT_TIMERS = { rest: 10, leaveRoom: 240, leaveList: 480, homeOfficeLeaveList: 60, restMove: 15 };
-const ORDER = ['rest', 'leaveRoom', 'leaveList'];
+export const DEFAULT_TIMERS = { rest: 10, leaveRoom: 230, leaveList: 240, homeOfficeLeaveList: 60, restMove: 15 };
 
 export function parseTimers(data, { log = console.error, file = 'config.json' } = {}) {
   const timers = { ...DEFAULT_TIMERS };
@@ -123,7 +122,6 @@ export function parseTimers(data, { log = console.error, file = 'config.json' } 
     warn('precisa ser um objeto; usando os tempos padrão');
     return timers;
   }
-  const custom = new Set();
   for (const [name, value] of Object.entries(source)) {
     if (!(name in DEFAULT_TIMERS)) {
       warn(`tempo desconhecido "${name}" (disponíveis: ${Object.keys(DEFAULT_TIMERS).join(', ')}); ignorado`);
@@ -131,18 +129,7 @@ export function parseTimers(data, { log = console.error, file = 'config.json' } 
       warn(`"${name}" precisa ser um número de minutos maior que zero${name === 'restMove' ? ' (ou 0 para desligar)' : ''}; usando ${DEFAULT_TIMERS[name]}`);
     } else {
       timers[name] = value;
-      custom.add(name);
     }
-  }
-  for (let i = 1; i < ORDER.length; i++) {
-    const [before, after] = [ORDER[i - 1], ORDER[i]];
-    if (timers[before] < timers[after]) continue;
-    // quebra a ordem: volta ao padrão o valor personalizado do par
-    const undo = custom.has(after) ? after : before;
-    warn(`"${before}" (${timers[before]}) precisa ser menor que "${after}" (${timers[after]}); usando ${DEFAULT_TIMERS[undo]} em "${undo}"`);
-    timers[undo] = DEFAULT_TIMERS[undo];
-    custom.delete(undo);
-    i = 0; // confere a ordem de novo desde o começo
   }
   return timers;
 }

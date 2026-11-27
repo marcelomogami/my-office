@@ -10,13 +10,17 @@ import { DEFAULT_CAST } from './characters.js';
 // A lista sai na ordem em que as sessões apareceram, já com skin, lugar e o
 // rosto do quadro de sessões.
 
+// Ciclo das sessões paradas, cada prazo contado a partir do passo anterior:
+// sem evento por IDLE_AFTER_MS, vai descansar; descansando por AWAY_AFTER_MS,
+// vai embora (sai da sala e libera a baia); fora da sala por
+// REMOVE_AFTER_MS, sai também da lista. Com os padrões, sai da sala 4 horas
+// e da lista 8 horas depois da última atividade. Sessão fechada (SessionEnd,
+// processo encerrado ou Codex ausente no App Server) vai embora na hora e
+// sai da lista REMOVE_AFTER_MS depois do fechamento. Home office sai da
+// lista HOME_OFFICE_REMOVE_AFTER_MS depois da última atividade.
 export const IDLE_AFTER_MS = 10 * 60 * 1000;
-// Sem atividade por tanto tempo, o personagem vai embora: sai da sala e
-// libera a baia; após oito horas sem atividade, sai também da lista. Sessão
-// fechada (SessionEnd, processo encerrado ou Codex ausente no App Server) vai
-// embora na hora e fica na lista pelo mesmo prazo, contado do fechamento.
-export const AWAY_AFTER_MS = 4 * 60 * 60 * 1000;
-export const REMOVE_AFTER_MS = 8 * 60 * 60 * 1000;
+export const AWAY_AFTER_MS = 230 * 60 * 1000;
+export const REMOVE_AFTER_MS = 240 * 60 * 1000;
 export const HOME_OFFICE_REMOVE_AFTER_MS = 60 * 60 * 1000;
 
 // Evento do Claude Code -> status. Eventos fora da lista (Notification,
@@ -43,7 +47,7 @@ const QUOTA_ERRORS = new Set(['rate_limit', 'billing_error']);
 // cota seguem a mesma regra (descansa, vai embora, sai da lista).
 const CAN_REST = new Set(['done', 'error', 'quota']);
 
-// Status que, sem evento por `awayAfterMs`, vão embora da sala.
+// Status que, `awayAfterMs` depois de começar a descansar, vão embora da sala.
 const CAN_LEAVE = new Set(['idle', 'error', 'quota']);
 
 // Processo ainda existe? EPERM quer dizer que existe, só não é nosso.
@@ -140,9 +144,10 @@ export function createState({
     return isNew || agentChanged || before !== status || (status !== 'working' && previousSince !== s.since);
   }
 
-  // Pronto, erro ou cota há mais de `idleAfterMs` vira ocioso, ocioso há mais de
-  // `awayAfterMs` (desde o último evento) vai embora, e sessão cujo processo
-  // morreu vai embora na hora; devolve true se algo mudou.
+  // Pronto, erro ou cota há mais de `idleAfterMs` vira ocioso; descansando há
+  // mais de `awayAfterMs`, vai embora; fora da sala há mais de
+  // `removeAfterMs`, sai da lista. Sessão cujo processo morreu vai embora na
+  // hora. Devolve true se algo mudou.
   function tick() {
     let changed = false;
     for (const [id, s] of sessions) {
@@ -150,7 +155,7 @@ export function createState({
         if (leave(id, s)) changed = true;
         continue;
       }
-      // `since` é o último evento: os dois prazos contam a partir dele
+      // `since` é o último evento; ao ir embora, passa a ser a hora da saída
       const quiet = now() - s.since;
       if (CAN_REST.has(s.status) && quiet >= idleAfterMs) {
         s.status = 'idle';
@@ -161,9 +166,12 @@ export function createState({
         changed = true;
         continue;
       }
-      if (CAN_LEAVE.has(s.status) && quiet >= awayAfterMs) {
+      if (CAN_LEAVE.has(s.status) && quiet >= idleAfterMs + awayAfterMs) {
+        // a saída da lista conta a partir daqui, como numa sessão fechada
         s.status = 'away';
+        s.since += idleAfterMs + awayAfterMs;
         changed = true;
+        if (now() - s.since < removeAfterMs) continue;
       }
       if (s.status === 'away' && quiet >= removeAfterMs) {
         sessions.delete(id);
