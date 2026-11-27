@@ -10,8 +10,8 @@ body{display:flex;flex-direction:column}
 .brand{font-weight:750;font-size:18px;letter-spacing:-.6px;display:flex;align-items:center;gap:10px}
 .brand-icon{display:grid;place-items:center;color:#182634;background:#e9bc76;font-size:18px;width:27px;height:27px;border-radius:7px}
 .top-label{font-size:10px;letter-spacing:1.4px;font-weight:700;color:#6d838d}
-.top-right{display:flex;align-items:center;gap:14px}
-.offline{font-size:11px;font-weight:700;letter-spacing:.4px;color:#fff;background:#b13e53;padding:3px 9px;border-radius:999px}
+/* carimbo de desconectado sobre a sala, como no dock (centro calculado em main.js) */
+.offline{position:absolute;transform:translate(-50%,-50%) rotate(-6deg);background:#f4f4f4;color:#b13e53;border:6px solid #b13e53;outline:2px solid #b13e53;outline-offset:-14px;border-radius:10px;padding:14px 34px;font-size:clamp(22px,5vw,56px);font-weight:900;letter-spacing:2px;line-height:1.1;text-transform:uppercase;white-space:nowrap;pointer-events:none;box-shadow:0 8px 30px #0006}
 .offline[hidden]{display:none}
 .app{flex:1;min-height:0;display:flex;gap:12px;padding:10px}
 .office-wrap{position:relative;flex:1;min-width:0;min-height:0;line-height:0}

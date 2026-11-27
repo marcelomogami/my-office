@@ -439,7 +439,7 @@ app.canvas.addEventListener('pointerleave', () => (tooltip.hidden = true));
 // ---------------------------------------------------------------- sessões reais
 // O backend manda a lista completa a cada mudança; o navegador reconecta
 // sozinho se o backend cair ou reiniciar. Uma conexão parada sem fechar é
-// reaberta à mão. Fora há algum tempo, a barra do topo avisa (connection.js).
+// reaberta à mão. Fora há algum tempo, um carimbo sobre a sala avisa (connection.js).
 if (!DEMO) {
   const link = { downSince: null, lastSeen: Date.now() };
   const offline = document.querySelector('#offline');
@@ -468,6 +468,12 @@ if (!DEMO) {
       connect();
     }
     offline.hidden = !showDisconnected(link, now);
+    if (!offline.hidden) {
+      // no centro da sala desenhada (o canvas pode não ocupar a área toda)
+      const c = app.canvas;
+      offline.style.left = `${c.offsetLeft + c.offsetWidth / 2}px`;
+      offline.style.top = `${c.offsetTop + c.offsetHeight / 2}px`;
+    }
   }, 2000);
 }
 
