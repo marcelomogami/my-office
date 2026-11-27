@@ -15,8 +15,8 @@ import { BOSS, castOf, seatedAt } from './characters.js';
 // scene.json (dá para conferir com tools/compose_scene.py); este
 // arquivo só desenha. Coordenadas em pixels lógicos 1x; cada pixel lógico vira
 // U x U na tela. Móveis vêm de assets/office, balões e ícones de assets/ui e
-// personagens do catálogo servido pelo backend (padrão + custom): folhas 1x,
-// mapeadas por célula.
+// personagens do catálogo servido pelo backend, cada um com o custom da pasta
+// de configuração por cima: folhas 1x, mapeadas por célula.
 const U = 5;
 const { crop } = scene;
 
@@ -42,10 +42,18 @@ async function loadSheet(url) {
   source.scaleMode = 'nearest';
   return source;
 }
-const SHEETS = [
+// As folhas custom de objetos e interface (servidas pelo backend, da pasta de
+// configuração local) vêm antes das padrão: um sprite com o mesmo nome no
+// custom substitui o padrão, e na interface nomes novos acrescentam ícones.
+const customSheets = await (await fetch('/api/sheets')).json();
+const SHEETS = [];
+for (const kind of Object.keys(customSheets)) {
+  SHEETS.push({ map: customSheets[kind], source: await loadSheet(`/api/sheets/${kind}.png`) });
+}
+SHEETS.push(
   { map: officeMap.items, source: await loadSheet(officeUrl) },
   { map: uiMap.items, source: await loadSheet(uiUrl) },
-];
+);
 
 // Personagens: cada pose vira um sprite `id:seated` / `id:standing`.
 const { characters } = await (await fetch('/api/characters')).json();

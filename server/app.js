@@ -2,6 +2,7 @@ import { createReadStream, readFileSync } from 'node:fs';
 import { createState } from './state.js';
 import { loadCharacters, CONFIG_DIR } from './characters.js';
 import { loadConfig } from './config.js';
+import { loadSheets } from './sheets.js';
 import { castOf } from '../src/characters.js';
 import { loadMemory, saveMemory, loadSessions, saveSessions, MEMORY_FILE, SESSIONS_FILE } from './memory.js';
 
@@ -13,6 +14,8 @@ import { loadMemory, saveMemory, loadSessions, saveSessions, MEMORY_FILE, SESSIO
 //   GET  /api/characters              catálogo de personagens (padrão + custom)
 //   GET  /api/characters/<folha>.png  folha de personagens (default ou custom)
 //   GET  /api/fixed   sessões fixas da configuração local, para a demonstração
+//   GET  /api/sheets              sprites das folhas custom de objetos e interface
+//   GET  /api/sheets/<tipo>.png   folha custom (office ou ui)
 
 const scene = JSON.parse(readFileSync(new URL('../src/scene.json', import.meta.url), 'utf8'));
 
@@ -32,6 +35,7 @@ export function createOffice({
   const memory = loadMemory(memoryFile);
   // Lido na partida: personagem novo no catálogo entra depois de reiniciar.
   const characters = loadCharacters({ configDir });
+  const sheets = loadSheets({ configDir });
   const cast = castOf(characters.characters);
   const fixed = loadConfig({ configDir, cast, desks: scene.seatOrder });
   const state = createState({
@@ -125,6 +129,17 @@ export function createOffice({
     createReadStream(sheet).on('error', () => res.end()).pipe(res);
   }
 
+  // Só os mapas vão para a página; o caminho da folha fica no servidor.
+  function sheetRoute(path, res) {
+    if (path === '/api/sheets') {
+      return json(res, Object.fromEntries(Object.entries(sheets).map(([kind, s]) => [kind, s.items])));
+    }
+    const sheet = sheets[path.match(/^\/api\/sheets\/([a-z]+)\.png$/)?.[1]]?.sheet;
+    if (!sheet) return reply(res, 404);
+    res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'no-cache' });
+    createReadStream(sheet).on('error', () => res.end()).pipe(res);
+  }
+
   // Middleware no formato do Connect (o do Vite): o que não é da API segue.
   function handle(req, res, next) {
     const path = req.url.split('?')[0];
@@ -132,6 +147,7 @@ export function createOffice({
     if (path === '/api/stream' && req.method === 'GET') return stream(req, res);
     if (path.startsWith('/api/characters') && req.method === 'GET') return characterRoute(path, res);
     if (path === '/api/fixed' && req.method === 'GET') return json(res, { fixed });
+    if (path.startsWith('/api/sheets') && req.method === 'GET') return sheetRoute(path, res);
     if (path.startsWith('/api/')) return reply(res, 404);
     return next();
   }
