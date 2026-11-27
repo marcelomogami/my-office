@@ -111,7 +111,7 @@ const texture = (name) => {
 // frente da cafeteira e do sofá, mas atrás das baias.
 // Gerente: Boss na mesa de chefe, só decoração. Aparece no quadro lateral
 // acima das sessões e no tooltip.
-const MANAGER = { skin: BOSS, name: 'Boss', status: 'stress', bubbleX: 191, bubbleDY: 7 };
+const MANAGER = { skin: BOSS, name: 'Boss', status: 'stress', bubbleX: 191, bubbleDY: 1 };
 let managerSprite = null;
 const SEAT_ORDER = scene.seatOrder; // a fileira de cima está fora de uso por enquanto
 const slots = new Map(); // lugar -> Container
