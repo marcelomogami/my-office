@@ -45,7 +45,7 @@ The backend defaults to `127.0.0.1:5199`. Override the host and port with `MY_OF
 
 The scripts [`tools/hook.sh`](tools/hook.sh) and [`tools/codex-hook.sh`](tools/codex-hook.sh) receive events from Claude Code and Codex, respectively. They send only the metadata needed to identify the session and its status, without prompts, responses, or tool contents.
 
-**[Install, trust, and test the hooks](documentation/hooks.md)**
+**[Install, trust, and test the hooks](documentation/hooks.md)**, with `tools/install-hooks.sh` or by hand
 
 Codex model failures appear as errors, and a subsequent attempt returns the session to working. When the failure message is one of the messages Codex uses for exhausted usage (usage limit, quota, credits, spend cap), the session shows its quota instead; this relies on Codex's English messages, read locally and never sent.
 
