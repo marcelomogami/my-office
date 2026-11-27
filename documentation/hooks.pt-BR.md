@@ -131,7 +131,7 @@ Adicione as entradas abaixo a `~/.claude/settings.json`. O script `tools/hook.sh
 }
 ```
 
-O PID permite que o backend perceba que a sessão terminou quando seu processo deixa de existir, inclusive se não houver `SessionEnd`. A sessão fechada sai da sala e continua na lista como "foi embora" por 8 horas. O `StopFailure` depende de suporte na versão instalada. Consulte a [referência de hooks do Claude Code](https://code.claude.com/docs/en/hooks) para escopos, eventos e regras de configuração.
+O PID permite que o backend perceba que a sessão terminou quando seu processo deixa de existir, inclusive se não houver `SessionEnd`. A sessão fechada sai da sala e continua na lista como "foi embora" por 4 horas (`timers.leaveList`). O `StopFailure` depende de suporte na versão instalada. Consulte a [referência de hooks do Claude Code](https://code.claude.com/docs/en/hooks) para escopos, eventos e regras de configuração.
 
 ## Codex
 

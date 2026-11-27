@@ -1,6 +1,6 @@
 {
   "language": "en",
-  "timers": {"rest": 10, "leaveRoom": 240, "leaveList": 480, "homeOfficeLeaveList": 60, "restMove": 15},
+  "timers": {"rest": 10, "leaveRoom": 230, "leaveList": 240, "homeOfficeLeaveList": 60, "restMove": 15},
   "projects": {
     "my-api": {"character": "char2", "desk": 1},
     "website": {"character": "char4", "desk": 2},
