@@ -14,12 +14,15 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-from PIL import Image, ImageDraw
+from PIL import Image
 
 from session_panel import compose
 from sheets import BOSS, CAST, FACES, crop, frame, seated_at
 
 WIDTH, HEIGHT, SCALE = 478, 72, 2
+# Onde começa o piso e o deslocamento horizontal dos tijolos (como o
+# "background" de src/scene.json).
+FLOOR_Y, FLOOR_X = 20, -18
 DESKS = ('1', '2', '3', '4', '5', '6')
 # Lugares de descanso, numerados como as baias, a partir do Boss: da direita
 # para a esquerda e de cima para baixo (índices 0 a 7). Em pé na copa
@@ -68,18 +71,13 @@ def rest_layout(sessions, seats, previous=None, rng=random):
 
 
 def render(sessions, seats, phase=0, rest_seats=None):
-    im = Image.new('RGBA', (WIDTH, HEIGHT), '#41a6f6')
-    draw = ImageDraw.Draw(im)
-    for row, y in enumerate(range(20, HEIGHT, 8)):
-        h = min(8, HEIGHT-y)
-        draw.rectangle((0,y,WIDTH-1,y+h-1), fill='#41a6f6')
-        draw.line((0,y,WIDTH-1,y), fill='#73eff7')
-        if h == 8:
-            draw.line((0,y+7,WIDTH-1,y+7), fill='#29366f')
-        for x in range((54,20)[row % 2], WIDTH, 73):
-            draw.line((x,y,x,y+min(7,h)-1), fill='#29366f')
-            if h > 1:
-                draw.line((x+1,y+1,x+1,y+min(7,h)-1), fill='#73eff7')
+    im = Image.new('RGBA', (WIDTH, HEIGHT))
+    # Piso: o sprite `floor` repetido de 16 em 16 (três faixas, desenho a
+    # cada duas), com os tijolos deslocados como na página web.
+    floor = crop('floor')
+    for y in range(FLOOR_Y, HEIGHT, 16):
+        for x in range(FLOOR_X, WIDTH, floor.width):
+            im.paste(floor, (x, y))
 
     # Coordenadas dos móveis: canto superior esquerdo da célula no mapa.
     def sprite(name, x, y, flip=False):

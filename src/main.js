@@ -1,11 +1,10 @@
 import { panelDetails, panelFace } from './panel.js';
-import { Application, Container, Graphics, Rectangle, Sprite, Texture } from 'pixi.js';
+import { Application, Container, Rectangle, Sprite, Texture } from 'pixi.js';
 import './style.css';
 import officeUrl from '../assets/office/default.png';
 import officeMap from '../assets/office/default.json';
 import uiUrl from '../assets/ui/default.png';
 import uiMap from '../assets/ui/default.json';
-import background from './background.json';
 import scene from './scene.json';
 import { createBubbles } from './bubbles.js';
 import { STATUS } from './status.js';
@@ -69,28 +68,6 @@ world.scale.set(U);
 world.position.set(-crop.x * U, -crop.y * U);
 app.stage.addChild(world);
 
-// ---------------------------------------------------------------- fundo
-const hex = (s) => Number.parseInt(s.slice(1), 16);
-const g = new Graphics();
-world.addChild(g);
-const W = crop.x + crop.width;
-const H = crop.y + crop.height;
-
-for (const band of background.wall) g.rect(0, band.y, W, band.h ?? 1).fill(hex(band.color));
-
-// Piso em faixas de tijolos; a emenda alterna de posição a cada faixa.
-const f = background.floor;
-for (let y0 = f.y, k = 0; y0 < H; y0 += f.band, k++) {
-  const h = Math.min(f.band, H - y0);
-  g.rect(0, y0, W, h).fill(hex(f.base));
-  g.rect(0, y0, W, 1).fill(hex(f.light));
-  if (h === f.band) g.rect(0, y0 + f.band - 1, W, 1).fill(hex(f.dark));
-  for (let x = f.seams[k % f.seams.length]; x < W; x += f.brick) {
-    g.rect(x, y0, 1, Math.min(f.band - 1, h)).fill(hex(f.dark));
-    if (h > 1) g.rect(x + 1, y0 + 1, 1, Math.min(f.band - 2, h - 1)).fill(hex(f.light));
-  }
-}
-
 // ---------------------------------------------------------------- objetos
 const cache = new Map();
 const texture = (name) => {
@@ -102,6 +79,30 @@ const texture = (name) => {
   cache.set(name, tex);
   return tex;
 };
+
+// ---------------------------------------------------------------- fundo
+// Parede e piso repetem os sprites `wall` e `floor` da folha. A parede sobe
+// a partir do piso; o piso desce de 16 em 16 (o sprite tem três faixas e o
+// desenho se repete a cada duas, então a terceira cobre a primeira da
+// próxima peça). `floorX` desloca os tijolos na horizontal.
+{
+  const { floorY, floorX } = scene.background;
+  const right = crop.x + crop.width;
+  const bottom = crop.y + crop.height;
+  const tile = (name, x, y) => {
+    const s = new Sprite(texture(name));
+    s.scale.set(1 / U);
+    s.position.set(x, y);
+    world.addChild(s);
+    return s;
+  };
+  const [wallW, wallH] = [texture('wall').width / U, texture('wall').height / U];
+  for (let y = floorY - wallH; y + wallH > crop.y; y -= wallH)
+    for (let x = crop.x; x < right; x += wallW) tile('wall', x, y);
+  const floorW = texture('floor').width / U;
+  for (let y = floorY; y < bottom; y += 16)
+    for (let x = floorX; x < right; x += floorW) tile('floor', x, y);
+}
 
 // Lugares (baias com cadeira). Na lista da cena, cada "seat:X" marca em que
 // ponto da ordem de desenho entra quem senta no lugar X: depois da cadeira e
