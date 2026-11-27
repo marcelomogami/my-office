@@ -8,6 +8,7 @@ import uiMap from '../assets/ui/default.json';
 import scene from './scene.json';
 import { createBubbles } from './bubbles.js';
 import { STATUS } from './status.js';
+import { translator } from './i18n.js';
 import { layout, loadRemembered, saveRemembered } from './sessions.js';
 import { BOSS, castOf, seatedAt } from './characters.js';
 
@@ -19,6 +20,14 @@ import { BOSS, castOf, seatedAt } from './characters.js';
 // de configuração por cima: folhas 1x, mapeadas por célula.
 const U = 5;
 const { crop } = scene;
+
+// Idioma da configuração local (padrão inglês): textos fixos da página marcados
+// com data-i18n e os textos de status.
+const { language } = await (await fetch('/api/settings')).json();
+const t = translator(language);
+document.documentElement.lang = language;
+for (const el of document.querySelectorAll('[data-i18n]')) el.textContent = t(el.dataset.i18n);
+for (const el of document.querySelectorAll('[data-i18n-label]')) el.setAttribute('aria-label', t(el.dataset.i18nLabel));
 
 const app = new Application();
 await app.init({ width: crop.width * U, height: crop.height * U, background: '#41a6f6', antialias: false, preference: 'webgl' });
@@ -333,7 +342,7 @@ const panel = document.querySelector('#sessions');
 const homeFaces = new Map();
 function statusText(status) {
   const st = STATUS[status];
-  return `${st.emoji} ${st.label}`;
+  return `${st.emoji} ${t(`status.${status}`)}`;
 }
 function card(skin, title, subtitle) {
   const li = document.createElement('li');
@@ -356,7 +365,7 @@ function renderPanel() {
       const homeOffice = !seated && status !== 'away';
       const homeFace = DEMO ? panelFace(name, skinOf.get(name), homeFaces, CAST, DEMO_FIXED) : face;
       const skin = homeOffice ? homeFace : seated && skinOf.get(name);
-      const { title, text } = panelDetails(name, status, seated, since);
+      const { title, text } = panelDetails(name, status, seated, since, Date.now(), t);
       return card(skin, title, text);
     }),
   );

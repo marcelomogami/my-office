@@ -1,17 +1,32 @@
 """Lista de sessões desenhada ao lado da sala do dock."""
 import hashlib
+import json
 import math
 import time
 
 from PIL import Image, ImageDraw, ImageFont
 
-from sheets import BOSS, CAST, crop, face as face_crop
+from sheets import BOSS, CAST, CONFIG_DIR, ROOT, crop, face as face_crop
 
 CARD_WIDTH, CARD_HEIGHT, GAP = 178, 44, 6
 TOP, LEFT = 4, 968
 PANEL_WIDTH, PANEL_HEIGHT = 1514, 148
-LABELS = {'working': 'trabalhando', 'done': 'pronto', 'idle': 'descansando',
-          'away': 'foi embora', 'error': 'erro', 'quota': 'cota acabou'}
+
+
+def translator(config_dir=CONFIG_DIR):
+    """Textos de src/locales.json no idioma do config.json local, com a mesma
+    regra de src/i18n.js: padrão inglês, sem diferenciar maiúsculas, e o que
+    faltar no idioma escolhido cai no inglês."""
+    locales = json.loads((ROOT / 'src' / 'locales.json').read_text())
+    try:
+        wanted = json.loads((config_dir / 'config.json').read_text()).get('language')
+    except (OSError, ValueError, AttributeError):
+        wanted = None
+    chosen = next((lang for lang in locales if isinstance(wanted, str) and lang.lower() == wanted.strip().lower()), 'en')
+    return lambda key: locales[chosen].get(key, locales['en'].get(key, key))
+
+
+t = translator()
 ICONS = {'working': 'iconWork3', 'done': 'iconDone', 'idle': 'mugCoffee',
          'away': 'mugCoffee', 'error': 'iconError', 'quota': 'iconQuota'}
 
@@ -41,7 +56,7 @@ def details(session, seated, now):
         return name, None, ''
     home = not seated and status != 'away'
     shown = 'done' if home and status == 'idle' else status
-    title = f'{name} (home office)' if home else name
+    title = f"{name} ({t('homeOffice')})" if home else name
     timer = ''
     since = session.get('since')
     if not home and status in ('done', 'idle', 'error', 'quota') and isinstance(since, (int, float)) and math.isfinite(since):
@@ -95,6 +110,6 @@ def compose(room, sessions, seats, now=None):
         icon.thumbnail((13, 11), Image.Resampling.NEAREST)
         draw.rounded_rectangle((x + 44, y + 23, x + 59, y + 36), radius=2, fill='#f4f4f4')
         canvas.alpha_composite(icon, (x + 44 + (16 - icon.width) // 2, y + 23 + (14 - icon.height) // 2))
-        label = LABELS.get(status, status)
+        label = t(f'short.{status}')
         draw.text((x + 64, y + 23), fit_text(draw, label, NORMAL, 113), font=NORMAL, fill='#a5b7bc')
     return canvas

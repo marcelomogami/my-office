@@ -1,7 +1,7 @@
 import { createReadStream, readFileSync } from 'node:fs';
 import { createState } from './state.js';
 import { loadCharacters, CONFIG_DIR } from './characters.js';
-import { loadConfig } from './config.js';
+import { loadConfig, loadLanguage } from './config.js';
 import { loadSheets } from './sheets.js';
 import { castOf } from '../src/characters.js';
 import { loadMemory, saveMemory, loadSessions, saveSessions, MEMORY_FILE, SESSIONS_FILE } from './memory.js';
@@ -14,6 +14,7 @@ import { loadMemory, saveMemory, loadSessions, saveSessions, MEMORY_FILE, SESSIO
 //   GET  /api/characters              catálogo de personagens (padrão + custom)
 //   GET  /api/characters/<folha>.png  folha de personagens (default ou custom)
 //   GET  /api/fixed   sessões fixas da configuração local, para a demonstração
+//   GET  /api/settings  opções da configuração local para a página (idioma)
 //   GET  /api/sheets              sprites das folhas custom de objetos e interface
 //   GET  /api/sheets/<tipo>.png   folha custom (office ou ui)
 
@@ -38,6 +39,7 @@ export function createOffice({
   const sheets = loadSheets({ configDir });
   const cast = castOf(characters.characters);
   const fixed = loadConfig({ configDir, cast, desks: scene.seatOrder });
+  const language = loadLanguage({ configDir });
   const state = createState({
     seatOrder: scene.seatOrder,
     memory,
@@ -147,6 +149,7 @@ export function createOffice({
     if (path === '/api/stream' && req.method === 'GET') return stream(req, res);
     if (path.startsWith('/api/characters') && req.method === 'GET') return characterRoute(path, res);
     if (path === '/api/fixed' && req.method === 'GET') return json(res, { fixed });
+    if (path === '/api/settings' && req.method === 'GET') return json(res, { language });
     if (path.startsWith('/api/sheets') && req.method === 'GET') return sheetRoute(path, res);
     if (path.startsWith('/api/')) return reply(res, 404);
     return next();

@@ -9,18 +9,19 @@
 //   4 horas sem nenhum evento                               -> away
 //   8 horas sem nenhum evento                               -> removido da lista
 //
+// O texto de cada status fica em locales.json (`status.<nome>`).
 // `icon` é o ícone da folha desenhado dentro do balão (uma lista vira
 // animação, um quadro a cada 400 ms); `emoji` é só o ícone usado no quadro
 // lateral e no tooltip.
 // `idle` não tem balão: o personagem levanta e vai para a copa. `away` some
 // da sala (a baia fica livre) e só aparece no quadro lateral.
 export const STATUS = {
-  working: { label: 'trabalhando', emoji: '···', icon: ['iconWork1', 'iconWork2', 'iconWork3'] },
-  done: { label: 'pronto, respondeu', emoji: '👍', icon: 'iconDone' },
-  error: { label: 'deu erro', emoji: '❗', icon: 'iconError', bounce: true },
-  quota: { label: 'cota acabou', emoji: '🪫', icon: 'iconQuota' },
-  idle: { label: 'sem tarefa há um tempo', emoji: '☕' },
-  away: { label: 'foi embora', emoji: '🏠' },
+  working: { emoji: '···', icon: ['iconWork1', 'iconWork2', 'iconWork3'] },
+  done: { emoji: '👍', icon: 'iconDone' },
+  error: { emoji: '❗', icon: 'iconError', bounce: true },
+  quota: { emoji: '🪫', icon: 'iconQuota' },
+  idle: { emoji: '☕' },
+  away: { emoji: '🏠' },
   // Só do gerente (mesa de chefe), não vem de sessão.
-  stress: { label: 'stress...', emoji: '💢', icon: 'iconAnger' },
+  stress: { emoji: '💢', icon: 'iconAnger' },
 };

@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { panelFace } from '../src/panel.js';
+import { translator } from '../src/i18n.js';
 
 test('home office mantém a skin fixa ou a skin já atribuída', () => {
   const cache = new Map();
@@ -26,7 +27,14 @@ test('rosto sorteado nunca é o de uma sessão fixa', () => {
 
 test('home office mantém indicação de pronto sem tempo ao descansar', async () => {
   const { panelDetails } = await import('../src/panel.js');
-  assert.deepEqual(panelDetails('projeto', 'idle', false, 0, 600000), { title: 'projeto (home office)', text: '👍 pronto' });
-  assert.deepEqual(panelDetails('projeto', 'done', false, 0, 600000), { title: 'projeto (home office)', text: '👍 pronto' });
-  assert.deepEqual(panelDetails('projeto', 'error', false, 0, 600000), { title: 'projeto (home office)', text: '❗ deu erro' });
+  const pt = translator('pt-BR');
+  assert.deepEqual(panelDetails('projeto', 'idle', false, 0, 600000, pt), { title: 'projeto (home office)', text: '👍 pronto' });
+  assert.deepEqual(panelDetails('projeto', 'done', false, 0, 600000, pt), { title: 'projeto (home office)', text: '👍 pronto' });
+  assert.deepEqual(panelDetails('projeto', 'error', false, 0, 600000, pt), { title: 'projeto (home office)', text: '❗ deu erro' });
+});
+
+test('o quadro fala inglês por padrão e mostra o tempo parado', async () => {
+  const { panelDetails } = await import('../src/panel.js');
+  assert.deepEqual(panelDetails('projeto', 'idle', true, 0, 600000), { title: 'projeto', text: '☕ resting · 10m' });
+  assert.deepEqual(panelDetails('projeto', 'quota', true, 0, 60000), { title: 'projeto', text: '🪫 out of quota · 01m' });
 });

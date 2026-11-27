@@ -89,6 +89,19 @@ Desks are numbered from the Boss, right to left and top to bottom:
 
 The backend reads `config.json` when it starts; restart it after a change.
 
+## Language
+
+The interface is in English by default. For another language, set `language` in the same `config.json`:
+
+```json
+{
+  "language": "pt-BR",
+  "projects": {}
+}
+```
+
+The available languages are `en` and `pt-BR` (case-insensitive). Translations live in [`src/locales.json`](src/locales.json), read by both the web page and the dock; a string missing in a language shows in English. After changing the language, restart the backend and reopen the dock.
+
 ## Development
 
 Tests run automatically on GitHub Actions for every push and pull request ([`.github/workflows/tests.yml`](.github/workflows/tests.yml)). To run them locally:
