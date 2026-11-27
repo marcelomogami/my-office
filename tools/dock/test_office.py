@@ -139,4 +139,12 @@ class DisconnectedTest(unittest.TestCase):
         self.assertNotEqual(render([], {}, offline=True).tobytes(), render([], {}).tobytes())
 
 
+class HarnessDotTest(unittest.TestCase):
+    def test_card_shows_harness_dot(self):
+        from office import layout, render
+        base = {'name': 'a', 'skin': 'char1', 'status': 'working', 'seat': '1', 'face': 'char1'}
+        claude, codex = dict(base, agent='claude-code'), dict(base, agent='codex')
+        self.assertNotEqual(render([claude], layout([claude])).tobytes(), render([codex], layout([codex])).tobytes())
+
+
 if __name__ == '__main__': unittest.main()

@@ -27,6 +27,8 @@ def translator(config_dir=CONFIG_DIR):
 
 
 t = translator()
+# Cor de cada agente (harnesses.json, o mesmo da página web).
+HARNESSES = json.loads((ROOT / 'src' / 'harnesses.json').read_text())
 ICONS = {'working': 'iconWork3', 'done': 'iconDone', 'idle': 'mugCoffee',
          'away': 'mugCoffee', 'error': 'iconError', 'quota': 'iconQuota'}
 
@@ -104,7 +106,13 @@ def compose(room, sessions, seats, now=None, offline=False):
         if timer:
             tw = draw.textlength(timer, font=SMALL)
             draw.text((x + (44 - tw) / 2, y + 29), timer, font=SMALL, fill='#a5b7bc')
-        draw.text((x + 44, y + 5), fit_text(draw, title, BOLD, 133), font=BOLD, fill='#e8eff1')
+        harness = None if session.get('_boss') else HARNESSES.get(session.get('agent'))
+        if harness:
+            # bolinha do agente entre o avatar e o nome
+            draw.ellipse((x + 44, y + 8, x + 51, y + 15), fill=harness['color'])
+            draw.text((x + 55, y + 5), fit_text(draw, title, BOLD, 122), font=BOLD, fill='#e8eff1')
+        else:
+            draw.text((x + 44, y + 5), fit_text(draw, title, BOLD, 133), font=BOLD, fill='#e8eff1')
         if session.get('_boss'):
             if offline:
                 label = fit_text(draw, t('disconnected'), BOLD, 128)
