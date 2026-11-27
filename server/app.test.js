@@ -1,7 +1,7 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer, request } from 'node:http';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createOffice } from './app.js';
@@ -11,6 +11,10 @@ const memoryFile = join(dir, 'memory.json');
 const sessionsFile = join(dir, 'sessions.json');
 // Pasta de configuração própria do teste, com uma sessão fixa.
 writeFileSync(join(dir, 'config.json'), JSON.stringify({ projects: { fixo: { character: 'char2', desk: 1 } } }));
+// e uma folha custom de interface, que troca um ícone.
+mkdirSync(join(dir, 'ui'));
+writeFileSync(join(dir, 'ui', 'custom.json'), JSON.stringify({ items: { iconDone: [0, 19, 9, 9] } }));
+copyFileSync(new URL('../assets/ui/default.png', import.meta.url), join(dir, 'ui', 'custom.png'));
 const office = createOffice({ memoryFile, sessionsFile, configDir: dir });
 const server = createServer((req, res) => office.handle(req, res, () => res.writeHead(418).end()));
 await new Promise((r) => server.listen(0, '127.0.0.1', r));
@@ -36,6 +40,15 @@ test('sessão fixa da configuração ganha personagem e baia, e /api/fixed as ex
   const fixo = office.state.list().find((s) => s.name === 'fixo');
   assert.deepEqual([fixo.skin, fixo.seat, fixo.face], ['char2', '1', 'char2']);
   assert.deepEqual(await (await fetch(`${base}/api/fixed`)).json(), { fixed: { fixo: { skin: 'char2', seat: '1' } } });
+});
+
+test('/api/sheets expõe só as folhas custom encontradas, e serve o PNG delas', async () => {
+  assert.deepEqual(await (await fetch(`${base}/api/sheets`)).json(), { ui: { iconDone: [0, 19, 9, 9] } });
+  const png = await fetch(`${base}/api/sheets/ui.png`);
+  assert.equal(png.status, 200);
+  assert.equal(png.headers.get('content-type'), 'image/png');
+  await png.arrayBuffer();
+  assert.equal((await fetch(`${base}/api/sheets/office.png`)).status, 404);
 });
 
 test('eventos inválidos respondem 400', async () => {

@@ -1,8 +1,10 @@
 """Folhas de sprites e mapas compartilhados com a página web.
 
 Móveis vêm de assets/office e balões e ícones de assets/ui, mapeados por
-célula inteira em default.json. Personagens vêm do catálogo padrão
-(assets/characters) somado ao custom da pasta de configuração
+célula inteira em default.json, com as folhas custom da pasta de configuração
+(office/custom.json e ui/custom.json) por cima, sprite a sprite. Personagens
+vêm do catálogo padrão (assets/characters) somado ao custom da pasta de
+configuração
 (MY_OFFICE_CONFIG_DIR ou ~/.config/my-office/characters), com a mesma regra
 de src/characters.js: o custom substitui pelo id e acrescenta ids novos. Cada
 pose vira um sprite `id:seated` / `id:standing`.
@@ -24,6 +26,28 @@ def _load(folder):
 
 
 CONFIG_DIR = Path(os.environ.get('MY_OFFICE_CONFIG_DIR') or Path.home() / '.config' / 'my-office')
+_NAME = re.compile(r'^[A-Za-z0-9_-]{1,40}$')
+
+
+def _custom(folder, defaults, adds):
+    """Folha custom de objetos ou interface, com a mesma regra de server/sheets.js:
+    cada nome substitui o sprite padrão de mesmo nome; com `adds` (interface),
+    nomes novos acrescentam sprites. Sem mapa ou folha válidos, nada."""
+    folder = CONFIG_DIR / folder
+    try:
+        data = json.loads((folder / 'custom.json').read_text())
+        sheet = Image.open(folder / Path(str(data.get('sheet', 'custom.png'))).name).convert('RGBA')
+        source = data['items']
+        if not isinstance(source, dict):
+            return None
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
+        return None
+    items = {name: rect for name, rect in source.items()
+             if _NAME.match(name) and (adds or name in defaults)
+             and isinstance(rect, list) and len(rect) == 4
+             and all(isinstance(n, int) and not isinstance(n, bool) and n >= 0 for n in rect)
+             and rect[2] > 0 and rect[3] > 0}
+    return (items, sheet) if items else None
 BOSS = 'boss'
 # Mesma regra de src/characters.js: canto da célula sentada em relação à cadeira.
 SEAT_OFFSET, CHAIR_WIDTH = (-1, -4), 11
@@ -61,7 +85,10 @@ def _characters():
 
 FACES, _CHARACTER_SHEETS = _characters()
 CAST = tuple(cid for cid in FACES if cid != BOSS)
-SHEETS = (_load('office'), _load('ui'), *_CHARACTER_SHEETS)
+_OFFICE, _UI = _load('office'), _load('ui')
+# o custom vem antes do padrão e ganha na busca por nome
+SHEETS = tuple(s for s in (_custom('office', _OFFICE[0], False), _OFFICE,
+                           _custom('ui', _UI[0], True), _UI, *_CHARACTER_SHEETS) if s)
 
 
 def seated_at(cx, cy, flip, width):

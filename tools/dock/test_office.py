@@ -85,4 +85,27 @@ class RestDemoTest(unittest.TestCase):
         self.assertEqual(positions, {s['name']: i for i, s in enumerate(sessions)})
 
 
+class CustomSheetTest(unittest.TestCase):
+    def test_custom_sheets_override_and_add_by_name(self):
+        import json, os, shutil, subprocess, sys, tempfile
+        from pathlib import Path
+        here = Path(__file__).resolve().parent
+        with tempfile.TemporaryDirectory() as config:
+            for kind, items in (('office', {'desk': [1, 2, 17, 19], 'sofaNovo': [0, 0, 40, 24]}),
+                                ('ui', {'iconDone': [3, 4, 9, 9], 'iconNovo': [5, 6, 9, 9]})):
+                os.mkdir(Path(config) / kind)
+                (Path(config) / kind / 'custom.json').write_text(json.dumps({'items': items}))
+                shutil.copy(here.parents[1] / 'assets' / kind / 'default.png', Path(config) / kind / 'custom.png')
+            code = ('import json, sheets; print(json.dumps([sheets.frame(n) for n in '
+                    '("desk", "iconDone", "iconNovo", "chair0")] + ["sofaNovo" in str(sheets.SHEETS[0][0])]))')
+            out = subprocess.run([sys.executable, '-c', code], cwd=here, capture_output=True, text=True,
+                                 env={**os.environ, 'MY_OFFICE_CONFIG_DIR': config}, check=True).stdout
+        desk, done, new, chair, office_adds = json.loads(out)
+        self.assertEqual(desk, [1, 2, 17, 19])
+        self.assertEqual(done, [3, 4, 9, 9])
+        self.assertEqual(new, [5, 6, 9, 9])
+        self.assertEqual(chair, [0, 0, 16, 24])
+        self.assertFalse(office_adds)
+
+
 if __name__ == '__main__': unittest.main()
