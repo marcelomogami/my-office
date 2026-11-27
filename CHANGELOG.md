@@ -2,6 +2,16 @@
 
 Notable changes are grouped by published version. Complete release notes are also available in the [GitHub releases](https://github.com/marcelomogami/my-office/releases).
 
+## [0.8.0](https://github.com/marcelomogami/my-office/releases/tag/v0.8.0)
+
+- Splits the artwork into three sprite sheets with JSON maps shared by the web office and the Kitty dock: characters, office objects, and interface (bubbles and icons). Sprites are mapped by full cell, and the wall and floor are drawn from sprites instead of code.
+- Moves characters to their own sheet and catalog. Custom characters, office objects, and interface sprites can be layered over the defaults, by name, from the local configuration folder (`~/.config/my-office`), outside the repository.
+- Reads fixed projects from a local `config.json`: each project can have its own character and desk. Fixed characters are left out of the random draw, and characters repeat only when the free ones run out.
+- Numbers desks and rest spots from the Boss, right to left and top to bottom, the same way in both offices.
+- Picks a random free rest spot for each resting session: seven in the web office and eight in the dock, with two characters on each sofa.
+- Adjusts furniture, computers, rest spots, and bubbles to the new sheets in both offices, and adds rest and desk demonstrations (`?demo&descanso` on the web page, `--descanso` and `--baias` in the dock).
+- Documents the assets: sheets, cell sizes, custom sheets, room layout, and how to edit and check sprites.
+
 ## [0.7.2](https://github.com/marcelomogami/my-office/releases/tag/v0.7.2)
 
 - Closed sessions (Claude Code `SessionEnd` or ended process, Codex missing from the App Server) stay in the list as away for 8 hours instead of disappearing at once; a new session in the same project replaces them.
