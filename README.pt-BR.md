@@ -47,7 +47,7 @@ Os scripts [`tools/hook.sh`](tools/hook.sh) e [`tools/codex-hook.sh`](tools/code
 
 **[Como instalar, confiar e testar os hooks](documentation/hooks.pt-BR.md)**
 
-A integração do Codex identifica falhas de modelo como erro e volta ao estado de trabalho em uma nova tentativa. A identificação específica de cota do Codex ainda não está disponível.
+A integração do Codex identifica falhas de modelo como erro e volta ao estado de trabalho em uma nova tentativa. Quando a mensagem da falha é uma das que o Codex usa para uso esgotado (limite de uso, cota, créditos, teto de gasto), a sessão mostra a cota; isso depende das mensagens em inglês do Codex, lidas localmente e nunca enviadas.
 
 ## Usar no Kitty
 
