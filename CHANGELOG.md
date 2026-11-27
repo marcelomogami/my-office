@@ -2,6 +2,12 @@
 
 Notable changes are grouped by published version. Complete release notes are also available in the [GitHub releases](https://github.com/marcelomogami/my-office/releases).
 
+## [0.10.0](https://github.com/marcelomogami/my-office/releases/tag/v0.10.0)
+
+- Makes the session lifecycle timers configurable in minutes under `timers` in the local `config.json`. Each timer counts from the previous step: `rest` from the last activity, `leaveRoom` from when the session started resting, `leaveList` from when it left the room or was closed, plus `homeOfficeLeaveList`. Each one is optional, and `config.example.json` lists the defaults (10, 230, 240 and 60). With them, a session still leaves the room 4 hours and the list 8 hours after its last activity; a closed session now stays listed as away for 4 hours instead of 8.
+- Resting characters teleport to another free rest spot, never the same one, every 15 to 20 minutes while they keep resting (`timers.restMove`; `0` turns it off), in the web office and in the dock.
+- Removes the unused `MY_OFFICE_IDLE_MIN` and `MY_OFFICE_AWAY_MIN` environment variables.
+
 ## [0.9.0](https://github.com/marcelomogami/my-office/releases/tag/v0.9.0)
 
 - Translates the interface, with English as the default. Set `"language": "pt-BR"` in the local `config.json` for Brazilian Portuguese; the web office and the Kitty dock read the same translations from `src/locales.json`.
