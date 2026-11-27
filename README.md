@@ -108,6 +108,8 @@ The available languages are `en` and `pt-BR` (case-insensitive). Translations li
 
 ## Development
 
+To contribute, see **[CONTRIBUTING.md](CONTRIBUTING.md)**.
+
 Tests run automatically on GitHub Actions for every push and pull request ([`.github/workflows/tests.yml`](.github/workflows/tests.yml)). To run them locally:
 
 ```sh

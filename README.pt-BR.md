@@ -108,6 +108,8 @@ Os idiomas disponíveis são `en` e `pt-BR` (sem diferenciar maiúsculas). As tr
 
 ## Desenvolvimento
 
+Para contribuir, veja **[CONTRIBUTING.pt-BR.md](CONTRIBUTING.pt-BR.md)**.
+
 Os testes rodam automaticamente no GitHub Actions a cada push e pull request ([`.github/workflows/tests.yml`](.github/workflows/tests.yml)). Para rodar localmente:
 
 ```sh
