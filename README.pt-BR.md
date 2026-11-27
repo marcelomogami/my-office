@@ -57,7 +57,7 @@ O dock precisa de Python 3, Pillow e uma versão do Kitty com `os-window-dock` e
 
 ## Como as sessões aparecem
 
-Os balões mostram trabalho, conclusão, erro ou cota. Depois de **10 minutos** sem nova tarefa, uma sessão com baia vai descansar, tenha terminado, dado erro ou atingido a cota. Ela ganha um lugar de descanso livre sorteado e fica nele até o descanso acabar: a página web tem sete (em pé na copa, no sofá e na mesa de reunião) e o dock do Kitty tem oito. Após **4 horas** sem atividade, sai da sala e libera a baia; após **8 horas**, sai também da lista. Uma sessão fechada sai da sala na hora e continua na lista como "foi embora" por 8 horas; uma sessão nova no mesmo projeto toma o lugar dela. Sessões sem baia aparecem como home office e saem da lista após **1 hora** sem atividade.
+Os balões mostram trabalho, conclusão, erro ou cota. Depois de **10 minutos** sem nova tarefa, uma sessão com baia vai descansar, tenha terminado, dado erro ou atingido a cota. Ela ganha um lugar de descanso livre sorteado e fica nele até o descanso acabar: a página web tem sete (em pé na copa, no sofá e na mesa de reunião) e o dock do Kitty tem oito. Após **4 horas** sem atividade, sai da sala e libera a baia; após **8 horas**, sai também da lista. Uma sessão fechada sai da sala na hora e continua na lista como "foi embora" por 8 horas; uma sessão nova no mesmo projeto toma o lugar dela. Sessões sem baia aparecem como home office e saem da lista após **1 hora** sem atividade. Esses tempos podem ser mudados: veja [Tempos](#tempos).
 
 Nos cartões da lista, uma bolinha colorida entre o rosto e o nome indica o agente da sessão: laranja para o Claude Code e verde para o Codex; o tooltip da página mostra o nome do agente ao lado dela. As cores ficam em [`src/harnesses.json`](src/harnesses.json), lido pela página web e pelo dock.
 
@@ -92,6 +92,26 @@ As baias são numeradas a partir do Boss, da direita para a esquerda e de cima p
 ![Números das baias no dock do Kitty](documentation/images/desks-dock.png)
 
 O backend lê o `config.json` ao iniciar; reinicie-o depois de uma mudança.
+
+## Tempos
+
+Os tempos do ciclo das sessões têm padrões no My Office e podem ser trocados em `timers`, no mesmo `config.json`, em minutos. Use só os que quiser mudar; os outros ficam no padrão:
+
+```json
+{
+  "timers": {"rest": 10, "leaveRoom": 240, "leaveList": 480, "homeOfficeLeaveList": 60, "restMove": 15}
+}
+```
+
+| Tempo | Padrão | O que faz |
+|---|---|---|
+| `rest` | 10 | Sem nova tarefa (pronto, erro ou cota), a sessão vai descansar. |
+| `leaveRoom` | 240 | Sem atividade, a sessão sai da sala e libera a baia. |
+| `leaveList` | 480 | A sessão fechada ou fora da sala sai também da lista. |
+| `homeOfficeLeaveList` | 60 | A sessão em home office sai da lista. |
+| `restMove` | 15 | Quem está descansando troca de lugar, num tempo sorteado entre o valor e um terço a mais (15 a 20 minutos), contado a partir de quando entrou em descanso. `0` desliga. |
+
+A ordem do ciclo é fixa: descansar, sair da sala, sair da lista. Um valor que a quebre, ou que não seja um número válido, é ignorado com uma mensagem no log do backend, e o padrão vale no lugar dele.
 
 ## Idioma
 
