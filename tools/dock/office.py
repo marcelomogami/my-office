@@ -70,7 +70,7 @@ def rest_layout(sessions, seats, previous=None, rng=random):
     return result
 
 
-def render(sessions, seats, phase=0, rest_seats=None):
+def render(sessions, seats, phase=0, rest_seats=None, offline=False):
     im = Image.new('RGBA', (WIDTH, HEIGHT))
     # Piso: o sprite `floor` repetido de 16 em 16 (três faixas, desenho a
     # cada duas), com os tijolos deslocados como na página web.
@@ -149,7 +149,7 @@ def render(sessions, seats, phase=0, rest_seats=None):
                  ('binBlue',259,34),('tableLong',270,34,True),('doc1',285,28),('printer',274,27),('dog',437,25,True)]: sprite(*item)
     for anchor,status,bx in anchors: bubble(anchor,status,bx)
     room = im.resize((WIDTH*SCALE, HEIGHT*SCALE), Image.Resampling.NEAREST)
-    return compose(room, sessions, seats)
+    return compose(room, sessions, seats, offline=offline)
 
 
 def rest_demo(chosen=()):
@@ -186,10 +186,18 @@ def watch_and_show(sessions, seats, rest_seats):
     os.execv(sys.executable, [sys.executable, *sys.argv])
 
 
-def stream(url, events):
+# Mesmas regras de src/connection.js: uma conexão fechada é percebida na hora;
+# uma parada, depois de 60 s sem nenhuma linha (o backend manda um sinal de
+# vida a cada 25 s); o aviso aparece depois de 10 s fora.
+STALE_AFTER, SHOW_AFTER = 60, 10
+
+
+def stream(url, events, link):
+    """Lê o stream do backend; `link['down_since']` marca desde quando está fora."""
     while True:
         try:
-            with urllib.request.urlopen(url, timeout=90) as response:
+            with urllib.request.urlopen(url, timeout=STALE_AFTER) as response:
+                link['down_since'] = None
                 for line in response:
                     if line.startswith(b'data:'):
                         try:
@@ -198,7 +206,10 @@ def stream(url, events):
                         except (ValueError, UnicodeDecodeError):
                             continue
         except (OSError, urllib.error.URLError):
-            time.sleep(2)
+            pass
+        if link['down_since'] is None:
+            link['down_since'] = time.time()
+        time.sleep(2)
 
 
 def send_image(im):
@@ -242,13 +253,20 @@ def main():
             sys.stdout.flush()
         return
     events = queue.Queue()
-    threading.Thread(target=stream, args=(args.url,events), daemon=True).start()
+    link = {'down_since': None}
+    threading.Thread(target=stream, args=(args.url, events, link), daemon=True).start()
     sessions, raw_sessions, seats, rest_seats, phase = [], [], {}, {}, 0
     sys.stdout.write('\x1b[?25l\x1b[2J')
     try:
         needs_redraw = True
         last_timers = None
+        offline = False
         while True:
+            down_since = link['down_since']
+            now_offline = down_since is not None and time.time() - down_since >= SHOW_AFTER
+            if now_offline != offline:
+                offline = now_offline
+                needs_redraw = True
             projected = [dict(s, status='idle') if args.test_idle_seconds is not None
                          and s.get('status') == 'done' and isinstance(s.get('since'), (int, float))
                          and time.time() * 1000 - s['since'] >= args.test_idle_seconds * 1000
@@ -264,7 +282,7 @@ def main():
                            and s.get('status') in ('done', 'idle', 'error', 'quota')
                            and isinstance(s.get('since'), (int, float)))
             if needs_redraw or timers != last_timers or any(s.get('status') == 'working' for s in sessions):
-                send_image(render(sessions, seats, phase, rest_seats))
+                send_image(render(sessions, seats, phase, rest_seats, offline))
                 needs_redraw = False
                 last_timers = timers
                 phase += 1

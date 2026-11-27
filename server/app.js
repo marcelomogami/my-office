@@ -76,8 +76,9 @@ export function createOffice({
   }
   const timers = [
     setInterval(() => { if (state.tick()) broadcast(); void checkCodex(); }, tickMs),
-    // comentário vazio de tempos em tempos, para proxies não fecharem o stream
-    setInterval(() => clients.forEach((res) => res.write(':\n\n')), heartbeatMs),
+    // sinal de vida de tempos em tempos: proxies não fecham o stream, e a
+    // página e o dock percebem uma conexão que parou sem fechar
+    setInterval(() => clients.forEach((res) => res.write('event: ping\ndata: {}\n\n')), heartbeatMs),
   ];
   timers.forEach((t) => t.unref());
 

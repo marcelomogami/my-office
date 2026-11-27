@@ -121,4 +121,22 @@ class TranslationTest(unittest.TestCase):
             self.assertEqual(pt('chave'), 'chave')
 
 
+class DisconnectedTest(unittest.TestCase):
+    def test_stream_marks_down_and_boss_card_warns(self):
+        import queue, socket, threading, time
+        from office import render, stream
+        with socket.socket() as s:  # porta livre, sem ninguém ouvindo
+            s.bind(('127.0.0.1', 0))
+            port = s.getsockname()[1]
+        link = {'down_since': None}
+        threading.Thread(target=stream, args=(f'http://127.0.0.1:{port}/api/stream', queue.Queue(), link),
+                         daemon=True).start()
+        for _ in range(50):
+            if link['down_since'] is not None:
+                break
+            time.sleep(.05)
+        self.assertIsNotNone(link['down_since'])
+        self.assertNotEqual(render([], {}, offline=True).tobytes(), render([], {}).tobytes())
+
+
 if __name__ == '__main__': unittest.main()

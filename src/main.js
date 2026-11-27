@@ -9,6 +9,7 @@ import scene from './scene.json';
 import { createBubbles } from './bubbles.js';
 import { STATUS } from './status.js';
 import { translator } from './i18n.js';
+import { STALE_AFTER_MS, isStale, showDisconnected } from './connection.js';
 import { layout, loadRemembered, saveRemembered } from './sessions.js';
 import { BOSS, castOf, seatedAt } from './characters.js';
 
@@ -417,10 +418,37 @@ app.canvas.addEventListener('pointerleave', () => (tooltip.hidden = true));
 
 // ---------------------------------------------------------------- sessões reais
 // O backend manda a lista completa a cada mudança; o navegador reconecta
-// sozinho se o backend cair ou reiniciar.
+// sozinho se o backend cair ou reiniciar. Uma conexão parada sem fechar é
+// reaberta à mão. Fora há algum tempo, a barra do topo avisa (connection.js).
 if (!DEMO) {
-  const source = new EventSource('/api/stream');
-  source.onmessage = (e) => setSessions(JSON.parse(e.data));
+  const link = { downSince: null, lastSeen: Date.now() };
+  const offline = document.querySelector('#offline');
+  offline.textContent = t('disconnected');
+  let source;
+  const alive = () => {
+    link.downSince = null;
+    link.lastSeen = Date.now();
+  };
+  const connect = () => {
+    source?.close();
+    source = new EventSource('/api/stream');
+    source.onopen = alive;
+    source.onmessage = (e) => {
+      alive();
+      setSessions(JSON.parse(e.data));
+    };
+    source.addEventListener('ping', alive);
+    source.onerror = () => (link.downSince ??= Date.now());
+  };
+  connect();
+  setInterval(() => {
+    const now = Date.now();
+    if (isStale(link.lastSeen, now) && source.readyState === EventSource.OPEN) {
+      link.downSince ??= link.lastSeen + STALE_AFTER_MS;
+      connect();
+    }
+    offline.hidden = !showDisconnected(link, now);
+  }, 2000);
 }
 
 // ---------------------------------------------------------------- demonstração
