@@ -2,7 +2,7 @@
 
 *[Read this in English](characters.md)*
 
-Os personagens ficam numa folha de sprites própria, com um arquivo de catálogo ao lado. A página web e o dock do Kitty leem os mesmos arquivos.
+Os personagens ficam numa folha de sprites própria, com um arquivo de catálogo ao lado. A página web e o dock do Kitty leem os mesmos arquivos. As demais folhas (objetos, balões e ícones) e a configuração do editor estão em **[Assets](assets.pt-BR.md)**.
 
 ![Personagens padrão com seus identificadores](images/characters.png)
 

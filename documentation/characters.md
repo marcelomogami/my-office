@@ -2,7 +2,7 @@
 
 *[Leia isto em português](characters.pt-BR.md)*
 
-Characters live in their own sprite sheet, with a catalog file next to it. The web office and the Kitty dock read the same files.
+Characters live in their own sprite sheet, with a catalog file next to it. The web office and the Kitty dock read the same files. The other sheets (objects, bubbles and icons) and the editor settings are in **[Assets](assets.md)**.
 
 ![Default characters with their identifiers](images/characters.png)
 
