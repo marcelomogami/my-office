@@ -8,6 +8,7 @@ import { DEFAULT_LANGUAGE, LANGUAGES, normalizeLanguage } from '../src/i18n.js';
 // quais projetos têm personagem e baia fixos:
 //
 //   { "language": "pt-BR",
+//     "timers": { "rest": 10, "leaveRoom": 240, ... },
 //     "projects": { "<projeto>": { "character": "<id>", "desk": <número> } } }
 //
 // `character` e `desk` são opcionais. O resultado é o mapa de sessões fixas
@@ -98,4 +99,55 @@ export function parseLanguage(data, { log = console.error, file = 'config.json' 
 export function loadLanguage({ configDir = CONFIG_DIR, log = console.error } = {}) {
   const config = readConfig(configDir, log);
   return config ? parseLanguage(config.data, { log, file: config.file }) : DEFAULT_LANGUAGE;
+}
+
+// Tempos do ciclo das sessões, em minutos. Cada um é opcional: o que faltar,
+// ou for inválido, fica com o padrão.
+//   rest                 pronto, erro ou cota sem evento: vai descansar
+//   leaveRoom            sem evento: sai da sala e libera a baia
+//   leaveList            fechada ou fora da sala: sai também da lista
+//   homeOfficeLeaveList  home office sem evento: sai da lista
+//   restMove             descansando: troca de lugar (sorteio entre o valor e
+//                        um terço a mais); 0 desliga
+// A ordem do ciclo é fixa (descansar, sair da sala, sair da lista): um valor
+// personalizado que a quebre é ignorado, com aviso.
+export const DEFAULT_TIMERS = { rest: 10, leaveRoom: 240, leaveList: 480, homeOfficeLeaveList: 60, restMove: 15 };
+const ORDER = ['rest', 'leaveRoom', 'leaveList'];
+
+export function parseTimers(data, { log = console.error, file = 'config.json' } = {}) {
+  const timers = { ...DEFAULT_TIMERS };
+  const source = data?.timers;
+  if (source === undefined) return timers;
+  const warn = (msg) => log(`my-office: ${file}: timers: ${msg}`);
+  if (source === null || typeof source !== 'object' || Array.isArray(source)) {
+    warn('precisa ser um objeto; usando os tempos padrão');
+    return timers;
+  }
+  const custom = new Set();
+  for (const [name, value] of Object.entries(source)) {
+    if (!(name in DEFAULT_TIMERS)) {
+      warn(`tempo desconhecido "${name}" (disponíveis: ${Object.keys(DEFAULT_TIMERS).join(', ')}); ignorado`);
+    } else if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || (value === 0 && name !== 'restMove')) {
+      warn(`"${name}" precisa ser um número de minutos maior que zero${name === 'restMove' ? ' (ou 0 para desligar)' : ''}; usando ${DEFAULT_TIMERS[name]}`);
+    } else {
+      timers[name] = value;
+      custom.add(name);
+    }
+  }
+  for (let i = 1; i < ORDER.length; i++) {
+    const [before, after] = [ORDER[i - 1], ORDER[i]];
+    if (timers[before] < timers[after]) continue;
+    // quebra a ordem: volta ao padrão o valor personalizado do par
+    const undo = custom.has(after) ? after : before;
+    warn(`"${before}" (${timers[before]}) precisa ser menor que "${after}" (${timers[after]}); usando ${DEFAULT_TIMERS[undo]} em "${undo}"`);
+    timers[undo] = DEFAULT_TIMERS[undo];
+    custom.delete(undo);
+    i = 0; // confere a ordem de novo desde o começo
+  }
+  return timers;
+}
+
+export function loadTimers({ configDir = CONFIG_DIR, log = console.error } = {}) {
+  const config = readConfig(configDir, log);
+  return config ? parseTimers(config.data, { log, file: config.file }) : { ...DEFAULT_TIMERS };
 }

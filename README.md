@@ -57,7 +57,7 @@ The dock requires Python 3, Pillow, and a Kitty version with `os-window-dock` an
 
 ## Session behavior
 
-Bubbles show working, finished, error, or quota. A session with a workstation moves to a rest area after **10 minutes** without a new task, whether it finished, failed, or reached its quota. It gets a random free rest spot and keeps it until the rest ends: the web page has seven (standing in the kitchen, on the sofa, and at the meeting table) and the Kitty dock has eight. After **4 hours** without activity, it leaves the room and frees its workstation; after **8 hours**, it also leaves the list. A closed session leaves the room at once and stays in the list as away for 8 hours; a new session in the same project replaces it. Sessions without a workstation appear as home office and leave the list after **1 hour** without activity.
+Bubbles show working, finished, error, or quota. A session with a workstation moves to a rest area after **10 minutes** without a new task, whether it finished, failed, or reached its quota. It gets a random free rest spot and keeps it until the rest ends: the web page has seven (standing in the kitchen, on the sofa, and at the meeting table) and the Kitty dock has eight. After **4 hours** without activity, it leaves the room and frees its workstation; after **8 hours**, it also leaves the list. A closed session leaves the room at once and stays in the list as away for 8 hours; a new session in the same project replaces it. Sessions without a workstation appear as home office and leave the list after **1 hour** without activity. These times can be changed: see [Timers](#timers).
 
 In the session cards, a colored dot between the face and the name shows the session's agent: orange for Claude Code and green for Codex; the web page tooltip shows the agent's name next to it. The colors live in [`src/harnesses.json`](src/harnesses.json), read by both the web page and the dock.
 
@@ -92,6 +92,26 @@ Desks are numbered from the Boss, right to left and top to bottom:
 ![Desk numbers in the Kitty dock](documentation/images/desks-dock.png)
 
 The backend reads `config.json` when it starts; restart it after a change.
+
+## Timers
+
+The session lifecycle timers have defaults in My Office and can be changed in `timers`, in the same `config.json`, in minutes. Set only the ones you want to change; the others keep their defaults:
+
+```json
+{
+  "timers": {"rest": 10, "leaveRoom": 240, "leaveList": 480, "homeOfficeLeaveList": 60, "restMove": 15}
+}
+```
+
+| Timer | Default | What it does |
+|---|---|---|
+| `rest` | 10 | Without a new task (done, error or quota), the session goes to rest. |
+| `leaveRoom` | 240 | Without activity, the session leaves the room and frees its desk. |
+| `leaveList` | 480 | A closed session, or one out of the room, also leaves the list. |
+| `homeOfficeLeaveList` | 60 | A home office session leaves the list. |
+| `restMove` | 15 | A resting session moves to another spot after a random time between the value and a third more (15 to 20 minutes), counted from when it started resting. `0` turns it off. |
+
+The lifecycle order is fixed: rest, leave the room, leave the list. A value that breaks it, or that is not a valid number, is ignored with a message in the backend log, and the default applies instead.
 
 ## Language
 

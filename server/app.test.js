@@ -51,8 +51,8 @@ test('/api/sheets expõe só as folhas custom encontradas, e serve o PNG delas',
   assert.equal((await fetch(`${base}/api/sheets/office.png`)).status, 404);
 });
 
-test('/api/settings manda o idioma (inglês sem a opção)', async () => {
-  assert.deepEqual(await (await fetch(`${base}/api/settings`)).json(), { language: 'en' });
+test('/api/settings manda o idioma e a troca de lugar (padrões sem as opções)', async () => {
+  assert.deepEqual(await (await fetch(`${base}/api/settings`)).json(), { language: 'en', restMove: 15 });
 });
 
 test('eventos inválidos respondem 400', async () => {
