@@ -2,6 +2,14 @@
 
 Notable changes are grouped by published version. Complete release notes are also available in the [GitHub releases](https://github.com/marcelomogami/my-office/releases).
 
+## [0.9.0](https://github.com/marcelomogami/my-office/releases/tag/v0.9.0)
+
+- Translates the interface, with English as the default. Set `"language": "pt-BR"` in the local `config.json` for Brazilian Portuguese; the web office and the Kitty dock read the same translations from `src/locales.json`.
+- Shows "disconnected" in the web office top bar and on the Boss card in the dock when the connection to the backend has been lost for more than 10 seconds. The backend sends a named heartbeat, so a stalled connection is noticed without extra requests.
+- Shows each session's agent as a colored dot between the face and the name in the session cards (orange for Claude Code, green for Codex), with the agent name in the web office tooltip.
+- Adds `tools/install-hooks.sh` to install or remove the hooks for Claude Code and Codex. It shows the change first, writes only with `--apply` after a backup, and keeps every other hook and setting.
+- Adds a contribution guide in English and Brazilian Portuguese, and issue templates for bug reports and feature requests.
+
 ## [0.8.0](https://github.com/marcelomogami/my-office/releases/tag/v0.8.0)
 
 - Splits the artwork into three sprite sheets with JSON maps shared by the web office and the Kitty dock: characters, office objects, and interface (bubbles and icons). Sprites are mapped by full cell, and the wall and floor are drawn from sprites instead of code.
