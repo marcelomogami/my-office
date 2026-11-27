@@ -4,6 +4,25 @@
 
 Os hooks conectam as sessões ao backend do My Office. Instalar o projeto ou abrir o escritório não registra hooks automaticamente: é preciso configurar o agente que você usa.
 
+## Instalar com um comando
+
+`tools/install-hooks.sh` acrescenta os hooks à configuração do agente por você, integrando-os ao que já existe:
+
+```bash
+tools/install-hooks.sh --agent claude-code           # mostra o que mudaria, sem gravar nada
+tools/install-hooks.sh --agent claude-code --apply   # aplica a mudança
+tools/install-hooks.sh --agent codex --apply
+```
+
+- Sem `--apply`, só mostra a mudança, como um diff.
+- Mexe só nas entradas do My Office (comandos que terminam em `tools/hook.sh` ou `tools/codex-hook.sh`) e preserva todos os outros hooks e configurações. Rodar de novo não muda nada; depois de mudar o clone de lugar, troca o caminho antigo.
+- Antes de gravar, guarda uma cópia ao lado do arquivo (`settings.json.bak-<data>`). O arquivo é regravado com a formatação padrão de JSON.
+- Usa `CLAUDE_CONFIG_DIR` e `CODEX_HOME` quando estão definidos.
+- Não baixa nada e não pede permissão de administrador. Confere se há `jq` e `curl`, que os hooks usam.
+- Para remover os hooks: `tools/install-hooks.sh --agent claude-code --uninstall --apply`.
+
+Reinicie as sessões abertas depois de instalar. Para configurar à mão, siga as seções abaixo.
+
 ## Antes de configurar
 
 - Tenha `bash`, `jq` e `curl` disponíveis, e mantenha o backend acessível em `http://127.0.0.1:5199`. Para outro endereço, defina `MY_OFFICE_URL` no ambiente do agente.

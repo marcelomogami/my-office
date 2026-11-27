@@ -45,7 +45,7 @@ O backend usa `127.0.0.1:5199` por padrão. O host e a porta podem ser alterados
 
 Os scripts [`tools/hook.sh`](tools/hook.sh) e [`tools/codex-hook.sh`](tools/codex-hook.sh) recebem os eventos do Claude Code e do Codex, respectivamente. Eles enviam somente metadados necessários à identificação da sessão e ao status, sem prompt, resposta ou conteúdo de ferramenta.
 
-**[Como instalar, confiar e testar os hooks](documentation/hooks.pt-BR.md)**
+**[Como instalar, confiar e testar os hooks](documentation/hooks.pt-BR.md)**, com `tools/install-hooks.sh` ou à mão
 
 A integração do Codex identifica falhas de modelo como erro e volta ao estado de trabalho em uma nova tentativa. Quando a mensagem da falha é uma das que o Codex usa para uso esgotado (limite de uso, cota, créditos, teto de gasto), a sessão mostra a cota; isso depende das mensagens em inglês do Codex, lidas localmente e nunca enviadas.
 
