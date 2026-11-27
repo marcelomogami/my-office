@@ -82,8 +82,11 @@ def panel_entries(sessions):
     return [{'name': 'Boss', 'skin': BOSS, '_boss': True}, *sessions[:8]]
 
 
-def compose(room, sessions, seats, now=None):
-    """Desenha o Boss e até oito sessões em três colunas de três cartões."""
+def compose(room, sessions, seats, now=None, offline=False):
+    """Desenha o Boss e até oito sessões em três colunas de três cartões.
+
+    Com `offline`, o cartão do Boss avisa que o dock está desconectado do
+    backend (o que aparece pode estar desatualizado)."""
     now = time.time() * 1000 if now is None else now
     canvas = Image.new('RGBA', (PANEL_WIDTH, PANEL_HEIGHT), (0, 0, 0, 0))
     canvas.alpha_composite(room, (0, TOP))
@@ -103,6 +106,11 @@ def compose(room, sessions, seats, now=None):
             draw.text((x + (44 - tw) / 2, y + 29), timer, font=SMALL, fill='#a5b7bc')
         draw.text((x + 44, y + 5), fit_text(draw, title, BOLD, 133), font=BOLD, fill='#e8eff1')
         if session.get('_boss'):
+            if offline:
+                label = fit_text(draw, t('disconnected'), BOLD, 128)
+                lw = draw.textlength(label, font=BOLD)
+                draw.rounded_rectangle((x + 44, y + 22, x + 44 + lw + 11, y + 37), radius=7, fill='#b13e53')
+                draw.text((x + 50, y + 23), label, font=BOLD, fill='#ffffff')
             continue
         icon_name = ICONS.get(status, 'iconWork3')
         icon = crop(icon_name)
