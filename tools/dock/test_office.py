@@ -147,4 +147,42 @@ class HarnessDotTest(unittest.TestCase):
         self.assertNotEqual(render([claude], layout([claude])).tobytes(), render([codex], layout([codex])).tobytes())
 
 
+class RestMoveTest(unittest.TestCase):
+    def test_resting_sessions_move_to_another_free_spot_after_the_interval(self):
+        import random
+        from office import REST, move_resting
+        rng = random.Random(1)
+        positions, moves = {'a': 0, 'b': 1}, {}
+        self.assertFalse(move_resting(positions, moves, 0, 15, rng))  # marca a primeira troca
+        self.assertTrue(all(15 * 60 <= at <= 20 * 60 for at in moves.values()))
+        self.assertFalse(move_resting(positions, moves, 14 * 60, 15, rng))
+        self.assertTrue(move_resting(positions, moves, 21 * 60, 15, rng))
+        self.assertNotIn(positions['a'], (0, positions['b']))
+        self.assertNotEqual(positions['b'], 1)
+        self.assertEqual(len(set(positions.values())), 2)
+        # quem sai do descanso perde a marca
+        del positions['a']
+        move_resting(positions, moves, 22 * 60, 15, rng)
+        self.assertNotIn('a', moves)
+        # sem lugar livre, fica onde está
+        full = {str(i): i for i in range(len(REST))}
+        marks = {name: 0 for name in full}
+        self.assertFalse(move_resting(full, marks, 1, 15, rng))
+
+    def test_zero_turns_moves_off_and_config_is_read(self):
+        import json, tempfile
+        from pathlib import Path
+        from office import move_resting, rest_move_minutes
+        positions, moves = {'a': 0}, {}
+        move_resting(positions, moves, 0, 0)
+        self.assertIsNone(moves['a'])
+        self.assertFalse(move_resting(positions, moves, 10 ** 9, 0))
+        with tempfile.TemporaryDirectory() as config:
+            self.assertEqual(rest_move_minutes(Path(config)), 15)
+            (Path(config) / 'config.json').write_text(json.dumps({'timers': {'restMove': 5}}))
+            self.assertEqual(rest_move_minutes(Path(config)), 5)
+            (Path(config) / 'config.json').write_text(json.dumps({'timers': {'restMove': -1}}))
+            self.assertEqual(rest_move_minutes(Path(config)), 15)
+
+
 if __name__ == '__main__': unittest.main()

@@ -11,6 +11,7 @@ import { STATUS } from './status.js';
 import { translator } from './i18n.js';
 import harnesses from './harnesses.json';
 import { STALE_AFTER_MS, isStale, showDisconnected } from './connection.js';
+import { nextMoveAt, pickSpot } from './rest.js';
 import { layout, loadRemembered, saveRemembered } from './sessions.js';
 import { BOSS, castOf, seatedAt } from './characters.js';
 
@@ -25,7 +26,7 @@ const { crop } = scene;
 
 // Idioma da configuração local (padrão inglês): textos fixos da página marcados
 // com data-i18n e os textos de status.
-const { language } = await (await fetch('/api/settings')).json();
+const { language, restMove } = await (await fetch('/api/settings')).json();
 const t = translator(language);
 document.documentElement.lang = language;
 for (const el of document.querySelectorAll('[data-i18n]')) el.textContent = t(el.dataset.i18n);
@@ -202,12 +203,21 @@ function seatIn(person, id, seatId) {
 const REST = Object.entries(scene.rest);
 const idleTaken = new Set();
 
-// `only`: lugar escolhido (para a demonstração de descanso); sem ele, sorteia.
+// `only`: lugar escolhido (para a demonstração de descanso, sem troca de
+// lugar); sem ele, sorteia, e a troca fica marcada para daqui a pouco.
 function goIdle(person, id, only) {
   if (person.idle) return true;
   const free = REST.filter(([spot]) => !idleTaken.has(spot) && (!only || spot === only));
   if (!free.length) return false;
-  const [spot, place] = free[Math.floor(Math.random() * free.length)];
+  const [spot] = free[Math.floor(Math.random() * free.length)];
+  placeIdle(person, id, spot);
+  person.nextMove = only ? null : nextMoveAt(Date.now(), restMove);
+  return true;
+}
+
+// Põe o personagem no lugar de descanso `spot` (em pé ou sentado).
+function placeIdle(person, id, spot) {
+  const place = scene.rest[spot];
   if (place.stand) {
     const { standing } = person;
     const w = standing.texture.width / U;
@@ -223,8 +233,25 @@ function goIdle(person, id, only) {
   }
   person.idle = spot;
   idleTaken.add(spot);
-  return true;
 }
+
+// Troca de lugar quem está descansando há tempo suficiente: some de um lugar
+// e aparece em outro livre (nunca o mesmo). Sem lugar livre, tenta de novo
+// depois de outro intervalo.
+function moveResting(now = Date.now()) {
+  for (const [id, person] of people) {
+    if (!person.idle || person.nextMove === null || person.nextMove === undefined || now < person.nextMove) continue;
+    const spot = pickSpot(REST.map(([s]) => s), idleTaken, person.idle);
+    if (spot) {
+      idleTaken.delete(person.idle);
+      person.standing.visible = false;
+      person.seated.visible = false;
+      placeIdle(person, id, spot);
+    }
+    person.nextMove = nextMoveAt(now, restMove);
+  }
+}
+setInterval(moveResting, 5000);
 
 function leaveIdle(person) {
   if (!person.idle) return;
