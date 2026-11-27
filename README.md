@@ -61,7 +61,7 @@ Bubbles show working, finished, error, or quota. A session with a workstation mo
 
 In the session cards, a colored dot between the face and the name shows the session's agent: orange for Claude Code and green for Codex; the web page tooltip shows the agent's name next to it. The colors live in [`src/harnesses.json`](src/harnesses.json), read by both the web page and the dock.
 
-If the connection to the backend is lost for more than 10 seconds, the web page shows "disconnected" in the top bar and the dock shows the same warning on the Boss card: what you see may be out of date. The warning clears when the connection returns.
+If the connection to the backend is lost for more than 10 seconds, the web page shows "disconnected" in the top bar and the dock shows a large "disconnected" stamp over the room: what you see may be out of date. The warning clears when the connection returns.
 
 Characters come from a sprite sheet and catalog that you can extend or replace with your own, outside the repository: see **[Characters](documentation/characters.md)**. The other sprite sheets, the room layout and how to edit the drawings are in **[Assets](documentation/assets.md)**.
 
