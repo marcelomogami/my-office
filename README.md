@@ -47,7 +47,7 @@ The scripts [`tools/hook.sh`](tools/hook.sh) and [`tools/codex-hook.sh`](tools/c
 
 **[Install, trust, and test the hooks](documentation/hooks.md)**
 
-Codex model failures appear as errors, and a subsequent attempt returns the session to working. Specific Codex quota detection is not yet available.
+Codex model failures appear as errors, and a subsequent attempt returns the session to working. When the failure message is one of the messages Codex uses for exhausted usage (usage limit, quota, credits, spend cap), the session shows its quota instead; this relies on Codex's English messages, read locally and never sent.
 
 ## Use the Kitty dock
 
