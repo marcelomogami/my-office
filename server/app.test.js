@@ -31,7 +31,7 @@ const post = (body) =>
 test('evento válido responde 204 e só guarda os metadados', async () => {
   const r = await post({ session_id: 's1', cwd: '/tmp/demo', event: 'UserPromptSubmit', tool: 'Bash', prompt: 'segredo' });
   assert.equal(r.status, 204);
-  assert.deepEqual(Object.keys(office.state.list()[0]).sort(), ['face', 'name', 'seat', 'since', 'skin', 'status']);
+  assert.deepEqual(Object.keys(office.state.list()[0]).sort(), ['agent', 'face', 'name', 'seat', 'since', 'skin', 'status']);
   assert.ok(!readFileSync(memoryFile, 'utf8').includes('segredo'));
 });
 

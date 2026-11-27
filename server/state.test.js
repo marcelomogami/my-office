@@ -42,7 +42,7 @@ test('ciclo de vida: entra, trabalha, pronto, ocioso, vai embora ao fechar', () 
   assert.equal(ev('a', 'UserPromptSubmit'), true);
   assert.equal(state.list()[0].status, 'working');
   assert.equal(ev('a', 'SessionEnd'), true);
-  assert.deepEqual(state.list(), [{ name: 'my-office', status: 'away', since: 1000, skin: null, seat: null, face: null }]);
+  assert.deepEqual(state.list(), [{ name: 'my-office', status: 'away', since: 1000, agent: 'claude-code', skin: null, seat: null, face: null }]);
   assert.equal(ev('a', 'SessionEnd'), false);
 });
 
@@ -161,8 +161,8 @@ test('snapshot volta num estado novo, com as sessões mortas já fora da sala', 
   const saved = first.state.snapshot();
   const again = setup({ saved, dead: new Set([222]) });
   assert.deepEqual(again.state.list(), [
-    { name: 'fixo-b', status: 'done', since: 0, skin: 'custom1', seat: '2', face: 'custom1' },
-    { name: 'b', status: 'away', since: 0, skin: null, seat: null, face: null },
+    { name: 'fixo-b', status: 'done', since: 0, agent: 'claude-code', skin: 'custom1', seat: '2', face: 'custom1' },
+    { name: 'b', status: 'away', since: 0, agent: 'claude-code', skin: null, seat: null, face: null },
   ]);
   again.advance(1000);
   again.state.tick();
@@ -183,7 +183,7 @@ test('4 horas (aqui, 5 s) sem evento: vai embora, libera a baia e volta ao agir'
   ev('b', 'UserPromptSubmit', `${P}/personal/outro`); // b continua ativo
   assert.equal(state.tick(), true);
   const [a, b] = state.list();
-  assert.deepEqual(a, { name: 'my-office', status: 'away', since: 0, skin: null, seat: null, face: null });
+  assert.deepEqual(a, { name: 'my-office', status: 'away', since: 0, agent: 'claude-code', skin: null, seat: null, face: null });
   assert.equal(b.status, 'working');
   assert.equal(ev('a', 'UserPromptSubmit'), true);
   const back = state.list()[0];
@@ -381,4 +381,14 @@ test('cota do Codex reconhecida pelo hook mostra cota e nova tentativa retoma tr
   assert.equal(state.list()[0].status, 'quota');
   ev('a', 'CodexModelStarted');
   assert.equal(state.list()[0].status, 'working');
+});
+
+test('a lista diz o agente de cada sessão, com cor em harnesses.json', async () => {
+  const harnesses = (await import('../src/harnesses.json', { with: { type: 'json' } })).default;
+  const { state } = setup();
+  state.event({ session_id: 'a', cwd: `${P}/personal/my-office`, event: 'UserPromptSubmit' });
+  state.event({ session_id: 'b', cwd: `${P}/personal/website`, event: 'SessionStart', agent: 'codex' });
+  const agents = Object.fromEntries(state.list().map((s) => [s.name, s.agent]));
+  assert.deepEqual(agents, { 'my-office': 'claude-code', website: 'codex' });
+  for (const agent of Object.values(agents)) assert.match(harnesses[agent].color, /^#[0-9a-f]{6}$/i);
 });

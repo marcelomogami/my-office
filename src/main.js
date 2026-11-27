@@ -9,6 +9,7 @@ import scene from './scene.json';
 import { createBubbles } from './bubbles.js';
 import { STATUS } from './status.js';
 import { translator } from './i18n.js';
+import harnesses from './harnesses.json';
 import { STALE_AFTER_MS, isStale, showDisconnected } from './connection.js';
 import { layout, loadRemembered, saveRemembered } from './sessions.js';
 import { BOSS, castOf, seatedAt } from './characters.js';
@@ -304,7 +305,7 @@ function render() {
 }
 
 function setSessions(list) {
-  sessions = list.map(({ name, status, skin, seat, since, face }) => ({ name, status, skin, seat, since, face }));
+  sessions = list.map(({ name, status, skin, seat, since, face, agent }) => ({ name, status, skin, seat, since, face, agent }));
   render();
 }
 
@@ -345,15 +346,25 @@ function statusText(status) {
   const st = STATUS[status];
   return `${st.emoji} ${t(`status.${status}`)}`;
 }
-function card(skin, title, subtitle) {
+// Bolinha com a cor do agente da sessão (harnesses.json), à esquerda do nome.
+function harnessDot(agent) {
+  const harness = harnesses[agent];
+  if (!harness) return null;
+  return Object.assign(document.createElement('span'), {
+    className: 'harness-dot',
+    title: harness.name,
+    style: `background:${harness.color}`,
+  });
+}
+function card(skin, title, subtitle, agent) {
   const li = document.createElement('li');
   if (skin) li.append(face(skin));
   else li.append(Object.assign(document.createElement('span'), { className: 'session-face empty', textContent: '?' }));
   const text = document.createElement('div');
-  text.append(
-    Object.assign(document.createElement('strong'), { textContent: title }),
-    Object.assign(document.createElement('small'), { textContent: subtitle }),
-  );
+  const name = Object.assign(document.createElement('strong'), { textContent: title });
+  const dot = harnessDot(agent);
+  if (dot) name.prepend(dot);
+  text.append(name, Object.assign(document.createElement('small'), { textContent: subtitle }));
   li.append(text);
   return li;
 }
@@ -361,13 +372,13 @@ document.querySelector('#manager')?.replaceChildren(card(MANAGER.skin, MANAGER.n
 
 function renderPanel() {
   panel.replaceChildren(
-    ...sessions.map(({ name, status, since, face }) => {
+    ...sessions.map(({ name, status, since, face, agent }) => {
       const seated = seatOf.has(name);
       const homeOffice = !seated && status !== 'away';
       const homeFace = DEMO ? panelFace(name, skinOf.get(name), homeFaces, CAST, DEMO_FIXED) : face;
       const skin = homeOffice ? homeFace : seated && skinOf.get(name);
       const { title, text } = panelDetails(name, status, seated, since, Date.now(), t);
-      return card(skin, title, text);
+      return card(skin, title, text, agent);
     }),
   );
 }
@@ -397,10 +408,12 @@ app.canvas.addEventListener('pointermove', (e) => {
     if (lx >= r.x && lx < r.x + r.w && ly >= r.y && ly < r.y + r.h) hit = name;
   }
   let title = hit;
-  let subtitle = hit && statusText(sessions.find((x) => x.name === hit).status);
+  const session = hit && sessions.find((x) => x.name === hit);
+  let subtitle = hit && statusText(session.status);
+  let agent = session?.agent;
   if (!hit && managerSprite) {
     const r = spriteRect(managerSprite);
-    if (lx >= r.x && lx < r.x + r.w && ly >= r.y && ly < r.y + r.h) [title, subtitle] = [MANAGER.name, statusText(MANAGER.status)];
+    if (lx >= r.x && lx < r.x + r.w && ly >= r.y && ly < r.y + r.h) [title, subtitle, agent] = [MANAGER.name, statusText(MANAGER.status), null];
   }
   if (!title) {
     tooltip.hidden = true;
@@ -410,6 +423,13 @@ app.canvas.addEventListener('pointermove', (e) => {
     Object.assign(document.createElement('strong'), { textContent: title }),
     Object.assign(document.createElement('span'), { textContent: subtitle }),
   );
+  // no tooltip, o nome do agente ao lado da bolinha: a cor nunca é a única pista
+  const dot = harnessDot(agent);
+  if (dot) {
+    const line = Object.assign(document.createElement('span'), { className: 'harness', textContent: harnesses[agent].name });
+    line.prepend(dot);
+    tooltip.append(line);
+  }
   tooltip.style.left = `${e.offsetX + 14}px`;
   tooltip.style.top = `${e.offsetY + 14}px`;
   tooltip.hidden = false;
@@ -467,7 +487,7 @@ if (DEMO && new URLSearchParams(location.search).has('descanso')) {
 } else if (DEMO) {
   const demoNames = [...new Set([...Object.keys(DEMO_FIXED), 'my-office', 'website', 'api', 'notes', 'scripts'])].slice(0, 5);
   const demoStatus = ['working', 'error', 'idle', 'done', 'quota'];
-  setSessions(demoNames.map((name, i) => ({ name, status: demoStatus[i] })));
+  setSessions(demoNames.map((name, i) => ({ name, status: demoStatus[i], agent: i % 2 ? 'codex' : 'claude-code' })));
   if (new URLSearchParams(location.search).has('ciclo')) {
     const names = Object.keys(STATUS).filter((st) => st !== 'stress' && st !== 'away');
     let k = 0;

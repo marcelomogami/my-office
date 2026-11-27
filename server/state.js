@@ -196,10 +196,12 @@ export function createState({
   function codexUnavailable() { codexSeen.clear(); codexMisses.clear(); }
 
   function list() {
-    return [...sessions.values()].map(({ name, status, since }) => ({
+    // sem `agent`, a sessão veio do hook do Claude Code (o do Codex se identifica)
+    return [...sessions.values()].map(({ name, status, since, agent }) => ({
       name,
       status,
       since,
+      agent: agent ?? 'claude-code',
       skin: placed.skins.get(name) ?? null,
       seat: placed.seats.get(name) ?? null,
       face: status === 'away' ? null : panelFace(name, placed.skins.get(name), faces, cast, fixed),
