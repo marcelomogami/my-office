@@ -403,7 +403,7 @@ function renderPanel() {
       const seated = seatOf.has(name);
       const homeOffice = !seated && status !== 'away';
       const homeFace = DEMO ? panelFace(name, skinOf.get(name), homeFaces, CAST, DEMO_FIXED) : face;
-      const skin = homeOffice ? homeFace : seated && skinOf.get(name);
+      const skin = homeOffice || status === 'away' ? homeFace : seated && skinOf.get(name);
       const { title, text } = panelDetails(name, status, seated, since, Date.now(), t);
       return card(skin, title, text, agent);
     }),

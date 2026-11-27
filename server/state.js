@@ -78,7 +78,7 @@ export function createState({
   fixed = {}, // sessões fixas da configuração: { nome: { skin, seat } }
 }) {
   const sessions = new Map(); // session_id -> { name, status, since, pid }
-  for (const { id, name, status, since, pid, agent } of saved) sessions.set(id, { name, status, since, pid, agent });
+  for (const { id, name, status, since, pid, agent, face } of saved) sessions.set(id, { name, status, since, pid, agent, face });
   const revisions = new Map();
   const codexSeen = new Set();
   const codexMisses = new Map();
@@ -86,9 +86,15 @@ export function createState({
   const faces = new Map(); // rosto sorteado de quem está em home office
 
   function arrange() {
+    for (const s of sessions.values()) {
+      if (s.status === 'away' && !s.face) s.face = placed.skins.get(s.name) ?? faces.get(s.name) ?? fixed[s.name]?.skin ?? memory.skins.get(s.name);
+    }
     const names = [...sessions.values()].filter((s) => s.status !== 'away').map((s) => s.name);
     const result = layout(names, seatOrder, memory, placed, cast, fixed);
     placed = { skins: result.skins, seats: result.seats };
+    for (const s of sessions.values()) {
+      if (s.status !== 'away' && placed.skins.has(s.name)) s.face = placed.skins.get(s.name);
+    }
     if (result.changed) onMemoryChange(memory);
   }
 
@@ -140,7 +146,7 @@ export function createState({
     const previousSince = s.since;
     s.status = status;
     s.since = now();
-    if (before === 'away') arrange(); // voltou: pega baia de novo
+    if (before === 'away') { delete s.face; arrange(); } // voltou: pega baia de novo
     return isNew || agentChanged || before !== status || (status !== 'working' && previousSince !== s.since);
   }
 
@@ -205,20 +211,20 @@ export function createState({
 
   function list() {
     // sem `agent`, a sessão veio do hook do Claude Code (o do Codex se identifica)
-    return [...sessions.values()].map(({ name, status, since, agent }) => ({
+    return [...sessions.values()].map(({ name, status, since, agent, face }) => ({
       name,
       status,
       since,
       agent: agent ?? 'claude-code',
       skin: placed.skins.get(name) ?? null,
       seat: placed.seats.get(name) ?? null,
-      face: status === 'away' ? null : panelFace(name, placed.skins.get(name), faces, cast, fixed),
+      face: status === 'away' ? panelFace(name, face ?? memory.skins.get(name), faces, cast, fixed) : panelFace(name, placed.skins.get(name), faces, cast, fixed),
     }));
   }
 
   // O que precisa sobreviver a um reinício do backend.
   function snapshot() {
-    return [...sessions].map(([id, { name, status, since, pid, agent }]) => ({ id, name, status, since, pid, ...(agent ? { agent } : {}) }));
+    return [...sessions].map(([id, { name, status, since, pid, agent, face }]) => ({ id, name, status, since, pid, ...(agent ? { agent } : {}), ...(face ? { face } : {}) }));
   }
 
   if (sessions.size) {

@@ -41,8 +41,9 @@ test('ciclo de vida: entra, trabalha, pronto, ocioso, vai embora ao fechar', () 
   assert.equal(state.list()[0].status, 'idle');
   assert.equal(ev('a', 'UserPromptSubmit'), true);
   assert.equal(state.list()[0].status, 'working');
+  const previousFace = state.list()[0].face;
   assert.equal(ev('a', 'SessionEnd'), true);
-  assert.deepEqual(state.list(), [{ name: 'my-office', status: 'away', since: 1000, agent: 'claude-code', skin: null, seat: null, face: null }]);
+  assert.deepEqual(state.list(), [{ name: 'my-office', status: 'away', since: 1000, agent: 'claude-code', skin: null, seat: null, face: previousFace }]);
   assert.equal(ev('a', 'SessionEnd'), false);
 });
 
@@ -160,9 +161,10 @@ test('snapshot volta num estado novo, com as sessões mortas já fora da sala', 
   first.state.event({ session_id: 'b', cwd: `${P}/personal/b`, event: 'UserPromptSubmit', pid: 222 });
   const saved = first.state.snapshot();
   const again = setup({ saved, dead: new Set([222]) });
+  const restoredFace = again.state.list()[1].face;
   assert.deepEqual(again.state.list(), [
     { name: 'fixo-b', status: 'done', since: 0, agent: 'claude-code', skin: 'custom1', seat: '2', face: 'custom1' },
-    { name: 'b', status: 'away', since: 0, agent: 'claude-code', skin: null, seat: null, face: null },
+    { name: 'b', status: 'away', since: 0, agent: 'claude-code', skin: null, seat: null, face: restoredFace },
   ]);
   again.advance(1000);
   again.state.tick();
@@ -174,6 +176,7 @@ test('4 horas (aqui, 5 s) sem evento: vai embora, libera a baia e volta ao agir'
   ev('a', 'Stop');
   ev('b', 'Stop', `${P}/personal/outro`);
   const seat = state.list()[0].seat;
+  const previousFace = state.list()[0].face;
   advance(1000);
   state.tick();
   assert.equal(state.list()[0].status, 'idle');
@@ -184,7 +187,7 @@ test('4 horas (aqui, 5 s) sem evento: vai embora, libera a baia e volta ao agir'
   assert.equal(state.tick(), true);
   const [a, b] = state.list();
   // a saída da lista passa a contar da hora em que foi embora
-  assert.deepEqual(a, { name: 'my-office', status: 'away', since: 5000, agent: 'claude-code', skin: null, seat: null, face: null });
+  assert.deepEqual(a, { name: 'my-office', status: 'away', since: 5000, agent: 'claude-code', skin: null, seat: null, face: previousFace });
   assert.equal(b.status, 'working');
   assert.equal(ev('a', 'UserPromptSubmit'), true);
   const back = state.list()[0];
@@ -412,4 +415,18 @@ test('cada prazo conta a partir do passo anterior: descansa, sai da sala, sai da
   advance(1);
   state.tick();
   assert.deepEqual(state.list(), []);
+});
+
+test('ao ir embora preserva rostos fixo e sorteado após reinício, sem reservar baia', () => {
+  const first = setup();
+  first.ev('a', 'Stop', `${P}/work/fixo-b`);
+  first.ev('b', 'Stop', `${P}/personal/outro`);
+  const before = first.state.list().map(({ face }) => face);
+  first.ev('a', 'SessionEnd', `${P}/work/fixo-b`);
+  first.ev('b', 'SessionEnd', `${P}/personal/outro`);
+  assert.deepEqual(first.state.list().map(({ face }) => face), before);
+  assert.ok(first.state.list().every(({ seat, skin }) => seat === null && skin === null));
+  const restored = setup({ saved: first.state.snapshot() });
+  assert.deepEqual(restored.state.list().map(({ face }) => face), before);
+  assert.ok(restored.state.list().every(({ seat }) => seat === null));
 });
