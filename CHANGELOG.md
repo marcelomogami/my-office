@@ -2,6 +2,11 @@
 
 Notable changes are grouped by published version. Complete release notes are also available in the [GitHub releases](https://github.com/marcelomogami/my-office/releases).
 
+## [0.10.1](https://github.com/marcelomogami/my-office/releases/tag/v0.10.1)
+
+- Adds persistent Boss emotes and text, editable in the web office, the Kitty dock or a portable CLI, plus independent automatic Boss rest cycles in both offices.
+- Keeps the assigned avatar in the session list after a session leaves the room, including after a backend restart, without reserving its workstation.
+
 ## [0.10.0](https://github.com/marcelomogami/my-office/releases/tag/v0.10.0)
 
 - Makes the session lifecycle timers configurable in minutes under `timers` in the local `config.json`. Each timer counts from the previous step: `rest` from the last activity, `leaveRoom` from when the session started resting, `leaveList` from when it left the room or was closed, plus `homeOfficeLeaveList`. Each one is optional, and `config.example.json` lists the defaults (10, 230, 240 and 60). With them, a session still leaves the room 4 hours and the list 8 hours after its last activity; a closed session now stays listed as away for 4 hours instead of 8.
