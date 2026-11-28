@@ -106,7 +106,7 @@ def stamp(room):
     return room
 
 
-def compose(room, sessions, seats, now=None, offline=False):
+def compose(room, sessions, seats, now=None, offline=False, boss=None):
     """Desenha o Boss e até oito sessões em três colunas de três cartões.
 
     Com `offline`, um carimbo grande sobre a sala avisa que o dock está
@@ -136,6 +136,18 @@ def compose(room, sessions, seats, now=None, offline=False):
         else:
             draw.text((x + 44, y + 5), fit_text(draw, title, BOLD, 133), font=BOLD, fill='#e8eff1')
         if session.get('_boss'):
+            # Lápis indica que o cartão abre o editor de status.
+            draw.line((x + CARD_WIDTH - 17, y + 15, x + CARD_WIDTH - 10, y + 8), fill='#a5b7bc', width=2)
+            draw.line((x + CARD_WIDTH - 18, y + 16, x + CARD_WIDTH - 15, y + 15), fill='#a5b7bc', width=1)
+            icon_name = (boss or {}).get('emotes', {}).get((boss or {}).get('emote'))
+            if icon_name:
+                try:
+                    icon = crop(icon_name)
+                    icon.thumbnail((13, 11), Image.Resampling.NEAREST)
+                    canvas.alpha_composite(icon, (x + 45, y + 24))
+                except KeyError:
+                    pass
+            draw.text((x + 64, y + 23), fit_text(draw, (boss or {}).get('text', ''), NORMAL, 113), font=NORMAL, fill='#a5b7bc')
             continue
         icon_name = ICONS.get(status, 'iconWork3')
         icon = crop(icon_name)

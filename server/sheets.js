@@ -53,7 +53,10 @@ function readCustom(dir, defaults, adds, log) {
     return null;
   }
   const items = customItems(data, defaults, { adds, log, file });
-  return Object.keys(items).length ? { items, sheet } : null;
+  const source = data?.emotes;
+  const validEmotes = source && typeof source === 'object' && !Array.isArray(source) ? source : {};
+  const emotes = Object.fromEntries(Object.entries(validEmotes).filter(([name, sprite]) => /^[a-z0-9][a-z0-9_-]{0,39}$/.test(name) && typeof sprite === 'string' && (Object.hasOwn(items, sprite) || Object.hasOwn(defaults, sprite))));
+  return Object.keys(items).length || Object.keys(emotes).length ? { items, sheet, emotes } : null;
 }
 
 // { office?: { items, sheet }, ui?: { items, sheet } }, só com as folhas custom encontradas.
@@ -64,4 +67,9 @@ export function loadSheets({ configDir = CONFIG_DIR, log = console.error } = {})
     if (custom) found[kind] = custom;
   }
   return found;
+}
+
+export function emoteCatalog(sheets) {
+  const defaults = JSON.parse(readFileSync(new URL('../assets/ui/default.json', import.meta.url), 'utf8'));
+  return { ...defaults.emotes, ...sheets.ui?.emotes };
 }

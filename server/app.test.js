@@ -9,13 +9,14 @@ import { createOffice } from './app.js';
 const dir = mkdtempSync(join(tmpdir(), 'my-office-'));
 const memoryFile = join(dir, 'memory.json');
 const sessionsFile = join(dir, 'sessions.json');
+const bossFile = join(dir, 'boss.json');
 // Pasta de configuração própria do teste, com uma sessão fixa.
 writeFileSync(join(dir, 'config.json'), JSON.stringify({ projects: { fixo: { character: 'char2', desk: 1 } } }));
 // e uma folha custom de interface, que troca um ícone.
 mkdirSync(join(dir, 'ui'));
 writeFileSync(join(dir, 'ui', 'custom.json'), JSON.stringify({ items: { iconDone: [0, 19, 9, 9] } }));
 copyFileSync(new URL('../assets/ui/default.png', import.meta.url), join(dir, 'ui', 'custom.png'));
-const office = createOffice({ memoryFile, sessionsFile, configDir: dir });
+const office = createOffice({ memoryFile, sessionsFile, bossFile, configDir: dir });
 const server = createServer((req, res) => office.handle(req, res, () => res.writeHead(418).end()));
 await new Promise((r) => server.listen(0, '127.0.0.1', r));
 const base = `http://127.0.0.1:${server.address().port}`;
@@ -52,7 +53,7 @@ test('/api/sheets expõe só as folhas custom encontradas, e serve o PNG delas',
 });
 
 test('/api/settings manda o idioma e a troca de lugar (padrões sem as opções)', async () => {
-  assert.deepEqual(await (await fetch(`${base}/api/settings`)).json(), { language: 'en', restMove: 15 });
+  assert.deepEqual(await (await fetch(`${base}/api/settings`)).json(), { language: 'en', restMove: 15, bossRestIntervalMax: 120, bossRestDuration: 25 });
 });
 
 test('eventos inválidos respondem 400', async () => {
@@ -128,4 +129,51 @@ test('guarda somente a identificação de agente Codex aceita', async () => {
   assert.equal(saved.find(s => s.id === 'codex-1').agent, 'codex');
   assert.ok(!readFileSync(sessionsFile, 'utf8').includes('segredo'));
   assert.equal((await post({ session_id: 'codex-2', cwd: '/tmp/codex', event: 'Stop', agent: 'outro' })).status, 400);
+});
+
+test('Boss valida, persiste, notifica e limpa a emoção', async () => {
+  const events = [];
+  const req = request(`${base}/api/stream`);
+  const notified = new Promise(resolve => req.on('response', res => {
+    res.setEncoding('utf8'); let buffer = '';
+    res.on('data', chunk => {
+      buffer += chunk;
+      let i;
+      while ((i = buffer.indexOf('\n\n')) >= 0) {
+        const message = buffer.slice(0, i); buffer = buffer.slice(i + 2);
+        if (message.startsWith('event: boss\n')) {
+          events.push(JSON.parse(message.split('\n')[1].slice(6)));
+          if (events.length === 2) resolve();
+        }
+      }
+    });
+  }));
+  req.end();
+  await new Promise(r => setTimeout(r, 30));
+  const put = data => fetch(`${base}/api/boss`, { method: 'PUT', body: JSON.stringify(data) });
+  assert.equal((await put({ emote: 'missing', text: '' })).status, 400);
+  assert.equal((await put({ emote: 'heart', text: 'x'.repeat(161) })).status, 400);
+  assert.equal((await put({ emote: 'heart', text: 'atenção à revisão' })).status, 200);
+  await notified; req.destroy();
+  assert.equal(events[1].text, 'atenção à revisão');
+  assert.deepEqual(JSON.parse(readFileSync(bossFile)), { emote: 'heart', text: 'atenção à revisão' });
+  const restored = createOffice({ memoryFile, sessionsFile, bossFile, configDir: dir });
+  const other = createServer((req, res) => restored.handle(req, res, () => res.end()));
+  await new Promise(r => other.listen(0, '127.0.0.1', r));
+  assert.equal((await (await fetch(`http://127.0.0.1:${other.address().port}/api/boss`)).json()).emote, 'heart');
+  restored.close(); other.close();
+  assert.equal((await fetch(`${base}/api/boss`, { method: 'DELETE' })).status, 200);
+  assert.deepEqual(JSON.parse(readFileSync(bossFile)), { emote: null, text: '' });
+});
+
+test('CLI aceita texto com espaços e acentos e informa falhas', async () => {
+  const { execFile } = await import('node:child_process');
+  const { promisify } = await import('node:util');
+  const run = promisify(execFile);
+  const env = { ...process.env, MY_OFFICE_URL: base };
+  const cli = new URL('../tools/my-office.js', import.meta.url).pathname;
+  const result = await run(process.execPath, [cli, 'boss', 'set', '--emote', 'heart', '--text', 'atenção à revisão'], { env });
+  assert.equal(JSON.parse(result.stdout).text, 'atenção à revisão');
+  await assert.rejects(run(process.execPath, [cli, 'boss', 'set', '--emote', 'inexistente'], { env }));
+  await run(process.execPath, [cli, 'boss', 'clear'], { env });
 });

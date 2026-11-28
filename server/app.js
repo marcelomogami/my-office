@@ -1,8 +1,9 @@
-import { createReadStream, readFileSync } from 'node:fs';
+import { createReadStream, readFileSync, mkdirSync, writeFileSync, renameSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { createState } from './state.js';
 import { loadCharacters, CONFIG_DIR } from './characters.js';
 import { loadConfig, loadLanguage, loadTimers } from './config.js';
-import { loadSheets } from './sheets.js';
+import { loadSheets, emoteCatalog } from './sheets.js';
 import { castOf } from '../src/characters.js';
 import { loadMemory, saveMemory, loadSessions, saveSessions, MEMORY_FILE, SESSIONS_FILE } from './memory.js';
 
@@ -27,6 +28,7 @@ const LOCAL = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1']);
 export function createOffice({
   memoryFile = MEMORY_FILE,
   sessionsFile = SESSIONS_FILE,
+  bossFile = join(dirname(sessionsFile), 'boss.json'),
   tickMs = 30_000,
   heartbeatMs = 25_000,
   codexLoad = null,
@@ -37,6 +39,12 @@ export function createOffice({
   // Lido na partida: personagem novo no catálogo entra depois de reiniciar.
   const characters = loadCharacters({ configDir });
   const sheets = loadSheets({ configDir });
+  const emotes = emoteCatalog(sheets);
+  let boss = { emote: null, text: '' };
+  try {
+    const saved = JSON.parse(readFileSync(bossFile, 'utf8'));
+    if (saved && typeof saved.emote === 'string' && typeof saved.text === 'string') boss = saved;
+  } catch { /* primeiro uso ou estado inválido */ }
   const cast = castOf(characters.characters);
   const fixed = loadConfig({ configDir, cast, desks: scene.seatOrder });
   const language = loadLanguage({ configDir });
@@ -124,6 +132,7 @@ export function createOffice({
       Connection: 'keep-alive',
     });
     res.write(payload());
+    res.write(`event: boss\ndata: ${JSON.stringify({ ...boss, emotes })}\n\n`);
     clients.add(res);
     req.on('close', () => clients.delete(res));
   }
@@ -149,14 +158,42 @@ export function createOffice({
     createReadStream(sheet).on('error', () => res.end()).pipe(res);
   }
 
+  function updateBoss(req, res) {
+    if (!LOCAL.has(req.socket.remoteAddress)) return reply(res, 403);
+    // Bloqueia requisições de páginas de outras origens ao serviço local.
+    if (req.headers.origin && req.headers.origin !== `http://${req.headers.host}` && req.headers.origin !== `https://${req.headers.host}`) return reply(res, 403);
+    if (req.method === 'DELETE') return saveBoss({ emote: null, text: '' }, res);
+    let body = '';
+    req.setEncoding('utf8');
+    req.on('data', chunk => { body += chunk; if (body.length > MAX_BODY) req.destroy(); });
+    req.on('end', () => {
+      let data;
+      try { data = JSON.parse(body); } catch { return reply(res, 400); }
+      if (!data || typeof data.emote !== 'string' || !Object.hasOwn(emotes, data.emote) || typeof data.text !== 'string' || [...data.text].length > 160 || /[\u0000-\u001f\u007f]/u.test(data.text)) return reply(res, 400);
+      saveBoss({ emote: data.emote, text: data.text }, res);
+    });
+  }
+  function saveBoss(value, res) {
+    try {
+      mkdirSync(dirname(bossFile), { recursive: true });
+      writeFileSync(`${bossFile}.tmp`, JSON.stringify(value) + '\n');
+      renameSync(`${bossFile}.tmp`, bossFile);
+    } catch (err) { console.error(`my-office: ${err.message}`); return reply(res, 500); }
+    boss = value;
+    for (const client of clients) client.write(`event: boss\ndata: ${JSON.stringify({ ...boss, emotes })}\n\n`);
+    json(res, boss);
+  }
+
   // Middleware no formato do Connect (o do Vite): o que não é da API segue.
   function handle(req, res, next) {
     const path = req.url.split('?')[0];
+    if (path === '/api/boss' && req.method === 'GET') return json(res, { ...boss, emotes });
+    if (path === '/api/boss' && ['PUT', 'DELETE'].includes(req.method)) return updateBoss(req, res);
     if (path === '/api/evento' && req.method === 'POST') return receive(req, res);
     if (path === '/api/stream' && req.method === 'GET') return stream(req, res);
     if (path.startsWith('/api/characters') && req.method === 'GET') return characterRoute(path, res);
     if (path === '/api/fixed' && req.method === 'GET') return json(res, { fixed });
-    if (path === '/api/settings' && req.method === 'GET') return json(res, { language, restMove: lifecycle.restMove });
+    if (path === '/api/settings' && req.method === 'GET') return json(res, { language, restMove: lifecycle.restMove, bossRestIntervalMax: lifecycle.bossRestIntervalMax, bossRestDuration: lifecycle.bossRestDuration });
     if (path.startsWith('/api/sheets') && req.method === 'GET') return sheetRoute(path, res);
     if (path.startsWith('/api/')) return reply(res, 404);
     return next();

@@ -186,3 +186,31 @@ class RestMoveTest(unittest.TestCase):
 
 
 if __name__ == '__main__': unittest.main()
+
+
+class BossRestTests(unittest.TestCase):
+    def test_waits_for_space_moves_and_returns(self):
+        from office import BossRest, REST, move_resting
+        class Rng:
+            def random(self): return 0
+            def choice(self, values): return values[0]
+        clock = BossRest(0, 2, 1, Rng())
+        positions = {str(i): i for i in range(len(REST))}
+        self.assertFalse(clock.tick(60, positions))
+        positions.pop('0')
+        self.assertTrue(clock.tick(61, positions))
+        self.assertEqual(positions[None], 0)
+        positions.pop('1')
+        moves = {None: 62}
+        self.assertTrue(move_resting(positions, moves, 62, 15, Rng()))
+        self.assertEqual(positions[None], 1)
+        self.assertTrue(clock.tick(121, positions))
+        self.assertNotIn(None, positions)
+
+
+class BossCardClickTests(unittest.TestCase):
+    def test_hit_is_limited_to_boss_card(self):
+        from office import boss_card_hit
+        self.assertTrue(boss_card_hit(102, 2, 10, 20))
+        self.assertFalse(boss_card_hit(20, 2, 10, 20))
+        self.assertFalse(boss_card_hit(102, 6, 10, 20))

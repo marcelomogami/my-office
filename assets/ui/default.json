@@ -2,14 +2,195 @@
   "sheet": "default.png",
   "gap": 2,
   "items": {
-    "bubbleThought": [0, 0, 13, 17],
-    "bubbleSpeech": [15, 0, 13, 17],
-    "iconWork1": [0, 19, 9, 9],
-    "iconWork2": [11, 19, 9, 9],
-    "iconWork3": [22, 19, 9, 9],
-    "iconDone": [33, 19, 9, 9],
-    "iconError": [44, 19, 9, 9],
-    "iconQuota": [55, 19, 9, 9],
-    "iconAnger": [66, 19, 9, 9]
+    "bubbleThought": [
+      0,
+      0,
+      13,
+      17
+    ],
+    "bubbleSpeech": [
+      15,
+      0,
+      13,
+      17
+    ],
+    "iconWork1": [
+      0,
+      19,
+      9,
+      9
+    ],
+    "iconWork2": [
+      11,
+      19,
+      9,
+      9
+    ],
+    "iconWork3": [
+      22,
+      19,
+      9,
+      9
+    ],
+    "iconDone": [
+      33,
+      19,
+      9,
+      9
+    ],
+    "iconError": [
+      44,
+      19,
+      9,
+      9
+    ],
+    "iconQuota": [
+      55,
+      19,
+      9,
+      9
+    ],
+    "iconAnger": [
+      66,
+      19,
+      9,
+      9
+    ],
+    "iconHeart": [
+      77,
+      19,
+      9,
+      9
+    ],
+    "iconDrop": [
+      88,
+      19,
+      9,
+      9
+    ],
+    "iconStar": [
+      99,
+      19,
+      9,
+      9
+    ],
+    "iconGhost": [
+      110,
+      19,
+      9,
+      9
+    ],
+    "iconSmile": [
+      121,
+      19,
+      9,
+      9
+    ],
+    "iconLightning": [
+      132,
+      19,
+      9,
+      9
+    ],
+    "iconSkull": [
+      143,
+      19,
+      9,
+      9
+    ],
+    "iconMusic": [
+      0,
+      30,
+      9,
+      9
+    ],
+    "iconFire": [
+      11,
+      30,
+      9,
+      9
+    ],
+    "iconQuestion": [
+      22,
+      30,
+      9,
+      9
+    ],
+    "iconCrown": [
+      33,
+      30,
+      9,
+      9
+    ],
+    "iconSword": [
+      44,
+      30,
+      9,
+      9
+    ],
+    "iconPotion": [
+      55,
+      30,
+      9,
+      9
+    ],
+    "iconSleep": [
+      66,
+      30,
+      9,
+      9
+    ],
+    "iconIdea": [
+      77,
+      30,
+      9,
+      9
+    ],
+    "iconStorm": [
+      88,
+      30,
+      9,
+      9
+    ],
+    "iconCry": [
+      99,
+      30,
+      9,
+      9
+    ],
+    "iconCoffee": [
+      110,
+      30,
+      9,
+      9
+    ],
+    "iconEyes": [
+      121,
+      30,
+      9,
+      9
+    ]
+  },
+  "emotes": {
+    "anger": "iconAnger",
+    "heart": "iconHeart",
+    "drop": "iconDrop",
+    "star": "iconStar",
+    "ghost": "iconGhost",
+    "smile": "iconSmile",
+    "lightning": "iconLightning",
+    "skull": "iconSkull",
+    "music": "iconMusic",
+    "fire": "iconFire",
+    "question": "iconQuestion",
+    "crown": "iconCrown",
+    "sword": "iconSword",
+    "potion": "iconPotion",
+    "sleep": "iconSleep",
+    "idea": "iconIdea",
+    "storm": "iconStorm",
+    "cry": "iconCry",
+    "coffee": "iconCoffee",
+    "eyes": "iconEyes"
   }
 }

@@ -58,7 +58,7 @@ The custom sheet is layered over the default one **sprite by sprite, by name**:
 - a sprite with the same name as a default sprite replaces it;
 - anything not in the custom map still comes from the default sheet, so the custom map only needs what changes;
 - **objects:** only names that already exist in the default map are accepted. The room layout belongs to the project, so furniture with a new name would have nowhere to appear;
-- **bubbles and icons:** new names are accepted too, to add emotes to the system. For now they are only loaded: a sprite shows up when something uses it by name, and the boss emotes are not implemented yet.
+- **bubbles and icons:** new names are accepted too, to add emotes to the system. Add them to the UI map’s `emotes` object to make them available for the boss.
 
 The custom map uses the same format as the default one, and positions refer to the custom sheet:
 
@@ -186,3 +186,13 @@ The `.aseprite` files have a `separators` layer that marks the cells and the 2-p
 - **Dock:** `python3 tools/dock/office.py --png /tmp/dock.png` renders an empty frame. In a Kitty tab, `--descanso` puts a character in every rest spot and `--baias` one in every desk, with bubbles; both refresh by themselves when the dock code changes.
 
 After changing a sheet, the page served by the service only changes after `npm run build`, and the dock has to be reopened.
+
+### Boss emotes
+
+In the web office, use **Edit status** below the Boss card to choose an emote, enter text, save, or clear it.
+
+Run `node tools/my-office.js boss get` to see the current state and available emote names. Set one with `node tools/my-office.js boss set --emote heart --text "focused"` and remove it with `node tools/my-office.js boss clear`. Text is optional and limited to 160 characters. State persists in the user state directory. Changes reach the web office and dock through the stream.
+
+The UI map has an `emotes` object mapping names to sprite names. Add entries to `ui/custom.json` alongside its `items` to add emotes or override names. For example, a `ui/custom.json` with `"items": {"iconHappy": [0, 0, 9, 9]}` and `"emotes": {"happy": "iconHappy"}` makes the name `happy` available; the corresponding sheet must be at `ui/custom.png`. Existing sprite names can also be replaced in `items`. Restart the backend and reopen the interfaces after changing sheets. An emote missing from the current catalog remains stored but is not drawn.
+
+In `config.json`, `timers.bossRestIntervalMax` (default 120 minutes) sets the maximum time between rests, with the actual interval drawn from half to the maximum; `timers.bossRestDuration` defaults to 25 minutes. The existing `restMove` controls movement during a rest. The web and dock run independent visual cycles.

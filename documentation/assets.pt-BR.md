@@ -58,7 +58,7 @@ O custom se sobrepõe ao padrão **sprite a sprite, pelo nome**:
 - um sprite com o mesmo nome de um sprite padrão o substitui;
 - o que não estiver no mapa custom continua vindo da folha padrão, então o custom só precisa ter o que muda;
 - **objetos:** só valem nomes que já existem no mapa padrão. A disposição da sala é a do projeto, então um móvel com nome novo não teria onde aparecer;
-- **balões e ícones:** nomes novos também são aceitos, para acrescentar emotes ao sistema. Por enquanto eles só ficam carregados: um sprite aparece quando algo o usa pelo nome, e os emotes do Boss ainda não foram implementados.
+- **balões e ícones:** nomes novos também são aceitos, para acrescentar emotes ao sistema. Acrescente-os ao objeto `emotes` do mapa de UI para disponibilizá-los ao Boss.
 
 O mapa custom tem o mesmo formato do padrão, e as posições se referem à folha custom:
 
@@ -186,3 +186,13 @@ Os arquivos `.aseprite` têm uma camada `separators`, que marca as células e o 
 - **Dock:** `python3 tools/dock/office.py --png /tmp/dock.png` gera um quadro vazio. Numa aba do Kitty, `--descanso` põe um personagem em cada lugar de descanso e `--baias` um em cada baia, com balões; os dois se atualizam sozinhos quando o código do dock muda.
 
 Depois de trocar uma folha, a página só muda no serviço depois de `npm run build`, e o dock precisa ser reaberto.
+
+### Emotes do Boss
+
+Na página web, use **Editar status** abaixo do cartão do Boss para escolher um emote, escrever o texto, salvar ou limpar.
+
+Execute `node tools/my-office.js boss get` para consultar o estado e os nomes disponíveis. Defina com `node tools/my-office.js boss set --emote heart --text "concentrado"` e limpe com `node tools/my-office.js boss clear`. O texto é opcional e limitado a 160 caracteres. O estado persiste no diretório de estado do usuário. As alterações chegam à página e ao dock pelo stream.
+
+O mapa de UI tem um objeto `emotes` que associa nomes a sprites. Acrescente entradas em `ui/custom.json` junto de `items` para adicionar emotes ou substituir nomes. Por exemplo, um `ui/custom.json` com `"items": {"iconHappy": [0, 0, 9, 9]}` e `"emotes": {"happy": "iconHappy"}` disponibiliza o nome `happy`; a folha correspondente deve estar em `ui/custom.png`. Sprites existentes também podem ser substituídos em `items`. Após alterar folhas, reinicie o backend e reabra as interfaces. Um emote ausente do catálogo continua salvo, mas não é desenhado.
+
+Em `config.json`, `timers.bossRestIntervalMax` (padrão 120 minutos) define o limite máximo entre descansos; o intervalo é sorteado entre a metade e o máximo. `timers.bossRestDuration` tem padrão de 25 minutos. O `restMove` existente controla as trocas durante o descanso. Página e dock mantêm ciclos visuais independentes.
