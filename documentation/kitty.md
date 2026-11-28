@@ -31,7 +31,7 @@ python3 -c 'import PIL; print(PIL.__version__)'
 In a Kitty action, use the renderer's absolute path, replacing `/path/to/my-office` with the repository directory:
 
 ```text
-launch --type=os-window-dock --title=my-office-dock --focus-existing=@title --dock-edge=bottom --dock-size=8 --dock-skip-focus --keep-focus /usr/bin/python3 /path/to/my-office/tools/dock/office.py
+launch --type=os-window-dock --allow-remote-control --title=my-office-dock --focus-existing=@title --dock-edge=bottom --dock-size=8 --dock-skip-focus --keep-focus /usr/bin/python3 /path/to/my-office/tools/dock/office.py
 ```
 
 This is a Kitty `launch` action suitable for a `map` in `kitty.conf`, not a standalone shell command. The bottom dock belongs to the Kitty window, stays visible when switching tabs, and closes when that window closes. `--dock-skip-focus` prevents it from receiving focus; `--keep-focus` keeps focus in the current terminal. The title and `--focus-existing=@title` allow an existing dock in the window to be reused. The same reuse option can be used with `--type=tab` and `--tab-title` to avoid duplicate titled tabs.
@@ -44,7 +44,7 @@ Do not automatically close the active tab in a shortcut that may be repeated fro
 
 ## Sessions and rest
 
-The backend determines statuses and sends each session's character, desk and list face, including the [fixed projects](../README.md#fixed-projects). The dock uses the same desk numbers as the web page, from 1 next to the Boss to 6 at the left end. The Boss always appears at the individual workstation. Sessions without a backend workstation or with `away` status are not drawn in the room.
+The backend determines statuses and sends each session's character, desk and list face, including the [fixed projects](../README.md#fixed-projects). The dock uses the same desk numbers as the web page, from 1 next to the Boss to 6 at the left end. The Boss uses the individual workstation and takes automatic breaks in the same rest spots as sessions. Sessions without a backend workstation or with `away` status are not drawn in the room.
 
 When a session becomes `idle`, the dock randomly selects one of the eight free rest positions (two standing and two chairs by the coffee table, and two on each sofa) and, every 15 to 20 minutes while it keeps resting, moves it to another free one (`timers.restMove` in `config.json`). The next rest gets a new selection. Bubbles represent `working`, `done`, `error`, and `quota`.
 
@@ -54,7 +54,13 @@ To check the rest positions, run `python3 tools/dock/office.py --descanso` in a 
 
 In the same way, `--baias` puts a character in every desk, with mixed statuses, to check the bubbles.
 
-The list shows the Boss first, without a status for now, followed by up to eight sessions in three columns of three cards. Session cards show avatar, name, and status. The background around the room and cards is transparent so the Kitty theme shows through. Elapsed time appears under the avatar for sessions with a room workstation; home-office sessions do not show it. The test delay does not change backend status indicators.
+The list shows the Boss first, with the emote and text set by the user, followed by up to eight sessions in three columns of three cards. Session cards show avatar, name, and status. The background around the room and cards is transparent so the Kitty theme shows through. Elapsed time appears under the avatar for sessions with a room workstation; home-office sessions do not show it. The test delay does not change backend status indicators.
+
+The Boss draws a working interval between 60 and 120 minutes and then rests for 25 minutes. While resting, the Boss has no bubble and may move to another spot. The times are configurable in minutes as `timers.bossRestIntervalMax`, `timers.bossRestDuration`, and `timers.restMove`. The web office and dock run independent cycles.
+
+## Edit the Boss status
+
+Click the Boss card to open the editor from the dock. The `--allow-remote-control` option on the dock launch lets its process ask Kitty to open the overlay. This permission applies to the process in that window and does not change the global remote-control setting. Saving or cancelling returns to the previous terminal.
 
 ## Tests
 
@@ -65,3 +71,13 @@ python3 tools/dock/office.py --png /tmp/my-office-dock.png
 ```
 
 The last command generates an empty frame for inspection without connecting to the backend. To test an isolated server, start it with `XDG_STATE_HOME=/tmp/my-office-teste MY_OFFICE_PORT=5296 node server/index.js` and pass `--url http://127.0.0.1:5296/api/stream` to the renderer. `npm run dev` uses the standard service's port 5199.
+
+### Optional editor shortcut
+
+The editor can also be opened over the terminal with a shortcut in `kitty.conf`. Replace the path with your project directory and choose an available key combination:
+
+```text
+map ctrl+shift+alt+b launch --type=overlay /usr/bin/python3 /path/to/my-office/tools/dock/boss_editor.py
+```
+
+Choose the emote number in the grid and edit the text. Enter keeps the current emote; `0` clears the status and `q` cancels. The editor uses the backend API and its catalog, including custom emotes. For a backend at another local address, set `MY_OFFICE_URL` in Kitty's environment. The shortcut is optional and must be configured by the user.

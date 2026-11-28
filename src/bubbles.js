@@ -35,7 +35,7 @@ export function createBubbles({ world, texture, U, ticker }) {
 
   // Quadro da animação dos pontinhos e o pulinho dos status com `bounce`.
   function animate(b, phase, hop) {
-    const st = STATUS[b.status];
+    const st = b.emote ? { icon: b.emote } : STATUS[b.status];
     const icons = st.icon;
     b.icon.texture = texture(Array.isArray(icons) ? icons[phase % icons.length] : icons);
     const { bx, by } = frameOf(b.anchor);
@@ -55,7 +55,7 @@ export function createBubbles({ world, texture, U, ticker }) {
   ticker.add((tk) => {
     t += tk.deltaMS;
     const { phase, hop } = frame();
-    for (const b of bubbles.values()) if (b.status) animate(b, phase, hop);
+    for (const b of bubbles.values()) if (b.status || b.emote) animate(b, phase, hop);
   });
 
   return {
@@ -64,7 +64,15 @@ export function createBubbles({ world, texture, U, ticker }) {
       if (!STATUS[status]?.icon) throw new Error(`status sem balão: ${status}`);
       let b = bubbles.get(id);
       if (!b) bubbles.set(id, (b = make()));
-      Object.assign(b, { anchor, status });
+      Object.assign(b, { anchor, status, emote: null });
+      b.box.visible = true;
+      const { phase, hop } = frame();
+      animate(b, phase, hop);
+    },
+    setEmote(id, anchor, emote) {
+      let b = bubbles.get(id);
+      if (!b) bubbles.set(id, (b = make()));
+      Object.assign(b, { anchor, status: null, emote });
       b.box.visible = true;
       const { phase, hop } = frame();
       animate(b, phase, hop);
@@ -73,6 +81,7 @@ export function createBubbles({ world, texture, U, ticker }) {
       const b = bubbles.get(id);
       if (!b) return;
       b.status = null;
+      b.emote = null;
       b.box.visible = false;
     },
   };

@@ -19,7 +19,21 @@
     "tagline": "A SPACE FOR YOUR IDEAS",
     "officeLabel": "Pixel-art office; each character is an open agent session.",
     "sessionsLabel": "Open sessions",
-    "disconnected": "disconnected"
+    "disconnected": "disconnected",
+    "boss.edit": "Edit status",
+    "boss.title": "Boss status",
+    "boss.emote": "Choose an emote",
+    "boss.text": "Text (optional, up to 160 characters)",
+    "boss.clear": "Clear",
+    "boss.cancel": "Cancel",
+    "boss.save": "Save",
+    "boss.required": "Choose an emote.",
+    "boss.tooLong": "Text must be at most 160 characters.",
+    "boss.error": "Could not update the status. Check the connection and try again.",
+    "boss.terminalChoice": "Choose a number; Enter keeps the current emote, 0 clears, q cancels.",
+    "boss.terminalInvalid": "Choose a valid number, 0 or q.",
+    "boss.terminalText": "Edit the text (up to 160 characters), then press Enter:",
+    "boss.terminalClose": "Press Enter to close."
   },
   "pt-BR": {
     "status.working": "trabalhando",
@@ -41,6 +55,20 @@
     "tagline": "UM ESPAÇO PARA SUAS IDEIAS",
     "officeLabel": "Escritório em pixel art; cada personagem representa uma sessão de agente aberta.",
     "sessionsLabel": "Sessões abertas",
-    "disconnected": "desconectado"
+    "disconnected": "desconectado",
+    "boss.edit": "Editar status",
+    "boss.title": "Status do Boss",
+    "boss.emote": "Escolha um emote",
+    "boss.text": "Texto (opcional, até 160 caracteres)",
+    "boss.clear": "Limpar",
+    "boss.cancel": "Cancelar",
+    "boss.save": "Salvar",
+    "boss.required": "Escolha um emote.",
+    "boss.tooLong": "O texto deve ter no máximo 160 caracteres.",
+    "boss.error": "Não foi possível atualizar o status. Verifique a conexão e tente novamente.",
+    "boss.terminalChoice": "Escolha um número; Enter mantém o emote atual, 0 limpa, q cancela.",
+    "boss.terminalInvalid": "Escolha um número válido, 0 ou q.",
+    "boss.terminalText": "Edite o texto (até 160 caracteres) e pressione Enter:",
+    "boss.terminalClose": "Pressione Enter para fechar."
   }
 }

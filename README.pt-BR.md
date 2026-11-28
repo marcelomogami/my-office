@@ -95,7 +95,7 @@ O backend lê o `config.json` ao iniciar; reinicie-o depois de uma mudança.
 
 ## Tempos
 
-Os tempos do ciclo das sessões têm padrões no My Office e podem ser trocados em `timers`, no mesmo `config.json`, em minutos. Cada um conta a partir do passo anterior, então qualquer valor positivo funciona. Use só os que quiser mudar; os outros ficam no padrão:
+Os tempos do ciclo das sessões e do Boss têm padrões no My Office e podem ser trocados em `timers`, no mesmo `config.json`, em minutos. Os prazos das sessões contam a partir do passo anterior; os do Boss são independentes. Valores positivos são aceitos. Use só os que quiser mudar; os outros ficam no padrão:
 
 ```json
 {
@@ -110,6 +110,8 @@ Os tempos do ciclo das sessões têm padrões no My Office e podem ser trocados 
 | `leaveList` | 240 | Minutos fora da sala (ou desde o fechamento) até a sessão sair também da lista. |
 | `homeOfficeLeaveList` | 60 | Minutos sem atividade até a sessão em home office sair da lista. |
 | `restMove` | 15 | Quem está descansando troca de lugar, num tempo sorteado entre o valor e um terço a mais (15 a 20 minutos), contado a partir de quando entrou em descanso. `0` desliga. |
+| `bossRestIntervalMax` | 120 | Limite máximo do intervalo até o descanso do Boss; sorteado entre metade e o valor configurado. |
+| `bossRestDuration` | 25 | Duração do descanso do Boss. |
 
 Com os padrões, a sessão sai da sala 4 horas e da lista 8 horas depois da última atividade. Um valor que não seja um número válido é ignorado com uma mensagem no log do backend, e o padrão vale no lugar dele.
 
