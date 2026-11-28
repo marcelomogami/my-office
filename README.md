@@ -95,7 +95,7 @@ The backend reads `config.json` when it starts; restart it after a change.
 
 ## Timers
 
-The session lifecycle timers have defaults in My Office and can be changed in `timers`, in the same `config.json`, in minutes. Each one counts from the previous step, so any positive value works. Set only the ones you want to change; the others keep their defaults:
+The session and Boss lifecycle timers have defaults in My Office and can be changed in `timers`, in the same `config.json`, in minutes. Session timers count from the previous step; the Boss cycle is independent. Positive values are accepted. Set only the ones you want to change; the others keep their defaults:
 
 ```json
 {
@@ -110,6 +110,8 @@ The session lifecycle timers have defaults in My Office and can be changed in `t
 | `leaveList` | 240 | Minutes out of the room (or since it was closed) before the session also leaves the list. |
 | `homeOfficeLeaveList` | 60 | Minutes without activity before a home office session leaves the list. |
 | `restMove` | 15 | A resting session moves to another spot after a random time between the value and a third more (15 to 20 minutes), counted from when it started resting. `0` turns it off. |
+| `bossRestIntervalMax` | 120 | Maximum time until the Boss rests, randomly selected between half and the configured value. |
+| `bossRestDuration` | 25 | Duration of the Boss rest. |
 
 With the defaults, a session leaves the room 4 hours and the list 8 hours after its last activity. A value that is not a valid number is ignored with a message in the backend log, and the default applies instead.
 

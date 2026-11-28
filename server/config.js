@@ -111,7 +111,7 @@ export function loadLanguage({ configDir = CONFIG_DIR, log = console.error } = {
 //   homeOfficeLeaveList  home office sem evento: sai da lista
 //   restMove             descansando: troca de lugar (sorteio entre o valor e
 //                        um terço a mais); 0 desliga
-export const DEFAULT_TIMERS = { rest: 10, leaveRoom: 230, leaveList: 240, homeOfficeLeaveList: 60, restMove: 15 };
+export const DEFAULT_TIMERS = { rest: 10, leaveRoom: 230, leaveList: 240, homeOfficeLeaveList: 60, restMove: 15, bossRestIntervalMax: 120, bossRestDuration: 25 };
 
 export function parseTimers(data, { log = console.error, file = 'config.json' } = {}) {
   const timers = { ...DEFAULT_TIMERS };

@@ -3,20 +3,30 @@
 import argparse
 import base64
 import io
+import fcntl
 import json
+import math
 import os
 import queue
+import re
+import select
+import shlex
+import struct
+import subprocess
+import termios
+import tty
 import random
 import sys
 import threading
 import time
 import urllib.error
 import urllib.request
+import urllib.parse
 from pathlib import Path
 
 from PIL import Image
 
-from session_panel import compose
+from session_panel import compose, LEFT, TOP, CARD_WIDTH, CARD_HEIGHT
 from sheets import BOSS, CAST, CONFIG_DIR, FACES, crop, frame, seated_at
 
 WIDTH, HEIGHT, SCALE = 478, 72, 2
@@ -59,8 +69,39 @@ def rest_move_minutes(config_dir=CONFIG_DIR):
         value = json.loads((config_dir / 'config.json').read_text()).get('timers', {}).get('restMove')
     except (OSError, ValueError, AttributeError):
         return DEFAULT_REST_MOVE
-    valid = isinstance(value, (int, float)) and not isinstance(value, bool) and value >= 0
+    valid = isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value) and value >= 0
     return value if valid else DEFAULT_REST_MOVE
+
+
+def boss_timer(name, default, config_dir=CONFIG_DIR):
+    try:
+        value = json.loads((config_dir / 'config.json').read_text()).get('timers', {}).get(name)
+    except (OSError, ValueError, AttributeError):
+        return default
+    return value if isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value) and value > 0 else default
+
+
+class BossRest:
+    def __init__(self, now, interval, duration, rng=random):
+        self.interval, self.duration, self.rng = interval * 60, duration * 60, rng
+        self.resting = False
+        self.deadline = now + self.interval * (.5 + rng.random() * .5)
+
+    def tick(self, now, positions):
+        if now < self.deadline:
+            return False
+        if self.resting:
+            positions.pop(None, None)
+            self.resting = False
+            self.deadline = now + self.interval * (.5 + self.rng.random() * .5)
+            return True
+        free = [slot for slot in range(len(REST)) if slot not in positions.values()]
+        if not free:
+            return False
+        positions[None] = self.rng.choice(free)
+        self.resting = True
+        self.deadline = now + self.duration
+        return True
 
 
 def next_move_at(start, minutes, rng=random):
@@ -98,7 +139,8 @@ def rest_layout(sessions, seats, previous=None, rng=random):
     """Sorteia lugares livres e mantém a posição durante o mesmo descanso."""
     previous = previous or {}
     resting = [s['name'] for s in sessions if s.get('status') == 'idle' and s['name'] in seats]
-    result, occupied = {}, set()
+    result = {None: previous[None]} if None in previous else {}
+    occupied = set(result.values())
     for name in resting:
         old = previous.get(name)
         if old in range(len(REST)) and old not in occupied:
@@ -115,7 +157,7 @@ def rest_layout(sessions, seats, previous=None, rng=random):
     return result
 
 
-def render(sessions, seats, phase=0, rest_seats=None, offline=False):
+def render(sessions, seats, phase=0, rest_seats=None, offline=False, boss=None):
     im = Image.new('RGBA', (WIDTH, HEIGHT))
     # Piso: o sprite `floor` repetido de 16 em 16 (três faixas, desenho a
     # cada duas), com os tijolos deslocados como na página web.
@@ -156,12 +198,19 @@ def render(sessions, seats, phase=0, rest_seats=None, offline=False):
     live = {s['name']: s for s in sessions}
     rest_seats = rest_seats if rest_seats is not None else rest_layout(sessions, seats)
     resting = {slot: live[name] for name, slot in rest_seats.items() if name in live}
+    if None in rest_seats: resting[rest_seats[None]] = {'skin': BOSS}
+    boss_anchor = None
     def rest(slots):
+        nonlocal boss_anchor
         for slot in slots:
             if slot in resting:
                 kind, x, y, flip = REST[slot]
-                if kind == 'stand': sprite(resting[slot]['skin']+':standing', x, y, flip)
-                else: person(resting[slot]['skin'], x, y, flip)
+                skin = resting[slot]['skin']
+                if kind == 'stand':
+                    sprite(skin+':standing', x, y, flip)
+                    anchor = (x, y, frame(skin+':standing')[2])
+                else: anchor = person(skin, x, y, flip)
+                if skin == BOSS: boss_anchor = anchor
     rest((0, 1, 2, 3))
     for item in [('tableSmall',96,4), ('boxGreen',93,4,True), ('mugCoffee',112,3)]: sprite(*item)
     anchors = []
@@ -184,7 +233,7 @@ def render(sessions, seats, phase=0, rest_seats=None, offline=False):
         sprite('partition',x,y+30)
     x,y=430,6
     for item in [('partitionSingle',x,y,True),('divider',x,y+5),('officeBlue',x+17,y+5,True),('desk',x+4,y+11,True)]: sprite(*item)
-    person(BOSS,x+22,y+7,True)
+    if None not in rest_seats: boss_anchor = person(BOSS,x+22,y+7,True)
     for item in [('computerSide1',x-5,y+5,True),('mugCoffee',x+5,y+7),('partitionSingle',x,y+30,True),
                  ('plant',42,40),('sofaGreen',58,40)]: sprite(*item)
     rest((6, 7))
@@ -193,8 +242,17 @@ def render(sessions, seats, phase=0, rest_seats=None, offline=False):
     for item in [('plant',200,34),('plant',343,34),('cat',320,36),('binRed',386,34),
                  ('binBlue',259,34),('tableLong',270,34,True),('doc1',285,28),('printer',274,27),('dog',437,25,True)]: sprite(*item)
     for anchor,status,bx in anchors: bubble(anchor,status,bx)
+    icon = (boss or {}).get('emotes', {}).get((boss or {}).get('emote'))
+    if boss_anchor and icon and None not in rest_seats:
+        try:
+            bx = min(WIDTH - 13, max(0, boss_anchor[0] + boss_anchor[2] - 2))
+            by = max(0, boss_anchor[1] - 8)
+            sprite('bubbleThought', bx, by, bx + 6 > boss_anchor[0] + boss_anchor[2] / 2)
+            sprite(icon, bx + 2, by + 1)
+        except KeyError:
+            pass
     room = im.resize((WIDTH*SCALE, HEIGHT*SCALE), Image.Resampling.NEAREST)
-    return compose(room, sessions, seats, offline=offline)
+    return compose(room, sessions, seats, offline=offline, boss=boss)
 
 
 def rest_demo(chosen=()):
@@ -243,11 +301,16 @@ def stream(url, events, link):
         try:
             with urllib.request.urlopen(url, timeout=STALE_AFTER) as response:
                 link['down_since'] = None
+                event_type = ''
                 for line in response:
+                    if line.startswith(b'event:'):
+                        event_type = line[6:].strip().decode('utf8')
                     if line.startswith(b'data:'):
                         try:
                             data = json.loads(line[5:])
-                            if isinstance(data, list): events.put(data)
+                            if isinstance(data, list): events.put(('sessions', data))
+                            elif event_type == 'boss' and isinstance(data, dict): events.put(('boss', data))
+                            event_type = ''
                         except (ValueError, UnicodeDecodeError):
                             continue
         except (OSError, urllib.error.URLError):
@@ -255,6 +318,49 @@ def stream(url, events, link):
         if link['down_since'] is None:
             link['down_since'] = time.time()
         time.sleep(2)
+
+
+_MOUSE = re.compile(rb'\x1b\[<([0-9]+);([0-9]+);([0-9]+)([Mm])')
+
+
+def boss_card_hit(column, row, cell_width, cell_height):
+    """O cartão ocupa a primeira posição da lista, em pixels da imagem."""
+    x, y = (column - .5) * cell_width, (row - .5) * cell_height
+    return LEFT <= x < LEFT + CARD_WIDTH and TOP <= y < TOP + CARD_HEIGHT
+
+
+def mouse_reader(events, stop):
+    """Recebe cliques SGR sem alterar o foco do dock."""
+    buffer = b''
+    while not stop.is_set():
+        try:
+            if not select.select([sys.stdin], [], [], .3)[0]:
+                continue
+            buffer += os.read(sys.stdin.fileno(), 256)
+            for match in _MOUSE.finditer(buffer):
+                button, x, y, action = match.groups()
+                if button == b'0' and action == b'M':
+                    rows, cols, width, height = struct.unpack('HHHH', fcntl.ioctl(sys.stdin.fileno(), termios.TIOCGWINSZ, bytes(8)))
+                    if rows and cols and width and height and boss_card_hit(int(x), int(y), width / cols, height / rows):
+                        events.put(('edit_boss', None))
+            last = buffer.rfind(b'\x1b')
+            buffer = buffer[last:] if last >= 0 and _MOUSE.fullmatch(buffer[last:]) is None else b''
+            if len(buffer) > 64: buffer = b''
+        except (OSError, ValueError):
+            return
+
+
+def open_boss_editor(url):
+    """Abre um overlay sobre a janela com foco, usando permissão do dock."""
+    base = urllib.parse.urlsplit(url)._replace(path='', query='', fragment='').geturl()
+    script = Path(__file__).with_name('boss_editor.py')
+    args = ' '.join(shlex.quote(str(value)) for value in
+                    ('--type=overlay', '--env', f'MY_OFFICE_URL={base}', '--env', f'MY_OFFICE_CONFIG_DIR={CONFIG_DIR}', sys.executable, script))
+    try:
+        subprocess.Popen(['kitten', '@', 'action', '--match', 'state:focused', 'launch', args],
+                         stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except OSError:
+        pass  # O dock continua funcionando mesmo sem o executável kitten.
 
 
 def send_image(im):
@@ -298,10 +404,18 @@ def main():
             sys.stdout.flush()
         return
     events = queue.Queue()
+    mouse_stop = threading.Event()
+    old_terminal = termios.tcgetattr(sys.stdin.fileno())
+    tty.setcbreak(sys.stdin.fileno())
+    sys.stdout.write('\x1b[?1000h\x1b[?1006h')
+    sys.stdout.flush()
+    threading.Thread(target=mouse_reader, args=(events, mouse_stop), daemon=True).start()
     link = {'down_since': None}
     threading.Thread(target=stream, args=(args.url, events, link), daemon=True).start()
     sessions, raw_sessions, seats, rest_seats, phase = [], [], {}, {}, 0
     rest_move, rest_moves = rest_move_minutes(), {}
+    boss = {}
+    boss_rest = BossRest(time.time(), boss_timer('bossRestIntervalMax', 120), boss_timer('bossRestDuration', 25))
     sys.stdout.write('\x1b[?25l\x1b[2J')
     try:
         needs_redraw = True
@@ -322,6 +436,9 @@ def main():
                 seats = layout(sessions)
                 rest_seats = rest_layout(sessions, seats, rest_seats)
                 needs_redraw = True
+            if boss_rest.tick(time.time(), rest_seats):
+                rest_seats = rest_layout(sessions, seats, rest_seats)
+                needs_redraw = True
             if move_resting(rest_seats, rest_moves, time.time(), rest_move):
                 needs_redraw = True
             now_ms = time.time() * 1000
@@ -330,19 +447,28 @@ def main():
                            and s.get('status') in ('done', 'idle', 'error', 'quota')
                            and isinstance(s.get('since'), (int, float)))
             if needs_redraw or timers != last_timers or any(s.get('status') == 'working' for s in sessions):
-                send_image(render(sessions, seats, phase, rest_seats, offline))
+                send_image(render(sessions, seats, phase, rest_seats, offline, boss))
                 needs_redraw = False
                 last_timers = timers
                 phase += 1
             try:
-                raw_sessions = events.get(timeout=.4)
-                while not events.empty(): raw_sessions = events.get_nowait()
+                kind, data = events.get(timeout=.4)
+                if kind == 'boss': boss = data; needs_redraw = True
+                elif kind == 'edit_boss': open_boss_editor(args.url)
+                else: raw_sessions = data
+                while not events.empty():
+                    kind, data = events.get_nowait()
+                    if kind == 'boss': boss = data; needs_redraw = True
+                    elif kind == 'edit_boss': open_boss_editor(args.url)
+                    else: raw_sessions = data
             except queue.Empty:
                 pass
     except KeyboardInterrupt:
         pass
     finally:
-        sys.stdout.write('\x1b_Ga=d,d=I,i=1,q=2\x1b\\\x1b[?25h')
+        mouse_stop.set()
+        termios.tcsetattr(sys.stdin.fileno(), termios.TCSADRAIN, old_terminal)
+        sys.stdout.write('\x1b[?1000l\x1b[?1006l\x1b_Ga=d,d=I,i=1,q=2\x1b\\\x1b[?25h')
         sys.stdout.flush()
 
 if __name__ == '__main__': main()

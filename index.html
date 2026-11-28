@@ -17,10 +17,26 @@
     <aside class="sessions" data-i18n-label="sessionsLabel">
       <p class="sessions-title" data-i18n="manager"></p>
       <ul id="manager"></ul>
+      <button id="boss-edit" class="boss-edit" type="button" data-i18n="boss.edit"></button>
       <p class="sessions-title" data-i18n="sessions"></p>
       <ul id="sessions"></ul>
     </aside>
   </main>
+  <dialog id="boss-dialog" class="boss-dialog" aria-labelledby="boss-dialog-title">
+    <form id="boss-form">
+      <h2 id="boss-dialog-title" data-i18n="boss.title"></h2>
+      <p class="boss-field-label" id="boss-emotes-label" data-i18n="boss.emote"></p>
+      <div id="boss-emotes" class="boss-emotes" role="radiogroup" aria-labelledby="boss-emotes-label"></div>
+      <label class="boss-field-label" for="boss-text" data-i18n="boss.text"></label>
+      <input id="boss-text" type="text" maxlength="320" autocomplete="off" />
+      <p id="boss-error" class="boss-error" role="alert" hidden></p>
+      <div class="boss-actions">
+        <button id="boss-clear" type="button" data-i18n="boss.clear"></button>
+        <button id="boss-cancel" type="button" data-i18n="boss.cancel"></button>
+        <button class="boss-save" type="submit" data-i18n="boss.save"></button>
+      </div>
+    </form>
+  </dialog>
   <script type="module" src="/src/main.js"></script>
 </body>
 </html>

@@ -12,6 +12,7 @@ import { translator } from './i18n.js';
 import harnesses from './harnesses.json';
 import { STALE_AFTER_MS, isStale, showDisconnected } from './connection.js';
 import { nextMoveAt, pickSpot } from './rest.js';
+import { createBossRest } from './boss-rest.js';
 import { layout, loadRemembered, saveRemembered } from './sessions.js';
 import { BOSS, castOf, seatedAt } from './characters.js';
 
@@ -26,7 +27,7 @@ const { crop } = scene;
 
 // Idioma da configuração local (padrão inglês): textos fixos da página marcados
 // com data-i18n e os textos de status.
-const { language, restMove } = await (await fetch('/api/settings')).json();
+const { language, restMove, bossRestIntervalMax, bossRestDuration } = await (await fetch('/api/settings')).json();
 const t = translator(language);
 document.documentElement.lang = language;
 for (const el of document.querySelectorAll('[data-i18n]')) el.textContent = t(el.dataset.i18n);
@@ -131,7 +132,9 @@ const texture = (name) => {
 // frente da cafeteira e do sofá, mas atrás das baias.
 // Gerente: Boss na mesa de chefe, só decoração. Aparece no quadro lateral
 // acima das sessões e no tooltip.
-const MANAGER = { skin: BOSS, name: 'Boss', status: 'stress', bubbleX: 191, bubbleDY: 1 };
+const MANAGER = { skin: BOSS, name: 'Boss', bubbleX: 191, bubbleDY: 1 };
+let bossState = { emote: null, text: '', emotes: {} };
+let bossStreamReceived = false;
 let managerSprite = null;
 const SEAT_ORDER = scene.seatOrder; // a fileira de cima está fora de uso por enquanto
 const slots = new Map(); // lugar -> Container
@@ -168,7 +171,7 @@ for (const [name, x, y, flip] of scene.items) {
 
 // Cada skin tem o sprite sentado (entra no lugar da sessão) e o em pé (copa).
 const people = new Map();
-for (const id of CAST) {
+for (const id of [...CAST, BOSS]) {
   const seated = new Sprite(texture(`${id}:seated`));
   const standing = new Sprite(texture(`${id}:standing`));
   for (const sp of [seated, standing]) {
@@ -229,6 +232,7 @@ function placeIdle(person, id, spot) {
     person.seated.visible = false;
   } else {
     sitOn(person, id, place, restSlots.get(spot));
+    person.standing.visible = false;
     person.seated.visible = true;
   }
   person.idle = spot;
@@ -265,11 +269,36 @@ function leaveIdle(person) {
 const bubbleLayer = new Container();
 world.addChild(bubbleLayer);
 const bubbles = createBubbles({ world: bubbleLayer, texture, U, ticker: app.ticker });
-if (managerSprite) {
-  const { x, y } = managerSprite;
-  // balão ao lado da cabeça, um pouco mais baixo que o das baias
-  bubbles.set('manager', { x, y: y + MANAGER.bubbleDY, w: managerSprite.texture.width / U, bx: MANAGER.bubbleX }, MANAGER.status);
+const bossRest = createBossRest({ intervalMax: bossRestIntervalMax * 60000, duration: bossRestDuration * 60000 });
+function renderBoss() {
+  const person = people.get(BOSS);
+  const sprite = person.idle ? (person.standing.visible ? person.standing : person.seated) : managerSprite;
+  managerSprite.visible = !person.idle;
+  bubbles.clear('manager');
+  const icon = bossState.emotes[bossState.emote];
+  if (!person.idle && sprite && icon && SHEETS.some(sh => icon in sh.map)) {
+    const anchor = spriteRect(sprite);
+    if (!person.idle) { anchor.bx = MANAGER.bubbleX; anchor.y += MANAGER.bubbleDY; }
+    bubbles.setEmote('manager', anchor, icon);
+  }
+  const el = card(BOSS, MANAGER.name, bossState.text);
+  if (icon && SHEETS.some(sh => icon in sh.map)) {
+    const tex = texture(icon), canvas = document.createElement('canvas');
+    canvas.width = tex.width / U; canvas.height = tex.height / U;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(tex.source.resource, tex.frame.x, tex.frame.y, tex.frame.width, tex.frame.height, 0, 0, canvas.width, canvas.height);
+    canvas.style.cssText = 'width:18px;height:18px;image-rendering:pixelated;vertical-align:middle;margin-right:4px';
+    el.querySelector('small').prepend(canvas);
+  }
+  document.querySelector('#manager')?.replaceChildren(el);
 }
+setInterval(() => {
+  const person = people.get(BOSS);
+  const action = bossRest.tick(() => goIdle(person, BOSS));
+  if (action === 'work') { leaveIdle(person); person.seated.visible = false; render(); }
+  moveResting();
+  renderBoss();
+}, 5000);
 
 // Mostra a skin `id` no lugar `seatId` com o status pedido; sem lugar, some.
 // A baia continua reservada enquanto a sessão está ociosa.
@@ -323,7 +352,7 @@ function render() {
   const occupied = new Set(seatOf.values());
   for (const [seatId, cup] of cups) cup.visible = occupied.has(seatId);
   const sessionOfSkin = new Map([...skinOf].map(([name, skin]) => [skin, name]));
-  for (const id of people.keys()) {
+  for (const id of CAST) {
     const name = sessionOfSkin.get(id);
     const seat = name && seatOf.get(name);
     showSkin(id, seat, seat ? sessions.find((s) => s.name === name).status : null);
@@ -395,7 +424,64 @@ function card(skin, title, subtitle, agent) {
   li.append(text);
   return li;
 }
-document.querySelector('#manager')?.replaceChildren(card(MANAGER.skin, MANAGER.name, statusText(MANAGER.status)));
+// O formulário é preenchido ao abrir, sem sobrescrever uma edição em andamento
+// quando outra interface muda o status pelo stream.
+const bossDialog = document.querySelector('#boss-dialog');
+const bossForm = document.querySelector('#boss-form');
+const bossEmotes = document.querySelector('#boss-emotes');
+const bossText = document.querySelector('#boss-text');
+const bossError = document.querySelector('#boss-error');
+function emotePreview(name) {
+  const tex = texture(name), canvas = document.createElement('canvas');
+  canvas.width = tex.width / U; canvas.height = tex.height / U;
+  canvas.getContext('2d').drawImage(tex.source.resource, tex.frame.x, tex.frame.y, tex.frame.width, tex.frame.height, 0, 0, canvas.width, canvas.height);
+  return canvas;
+}
+function openBossEditor() {
+  bossError.hidden = true;
+  bossText.value = bossState.text;
+  bossEmotes.replaceChildren();
+  for (const [name, sprite] of Object.entries(bossState.emotes)) {
+    if (!SHEETS.some(sh => sprite in sh.map)) continue;
+    const label = Object.assign(document.createElement('label'), { className: 'boss-emote', title: name });
+    const input = Object.assign(document.createElement('input'), { type: 'radio', name: 'emote', value: name, checked: name === bossState.emote });
+    input.setAttribute('aria-label', name);
+    label.append(input, emotePreview(sprite));
+    bossEmotes.append(label);
+  }
+  bossDialog.showModal();
+}
+function bossFormError(key) {
+  bossError.textContent = t(key);
+  bossError.hidden = false;
+}
+async function updateBoss(method, data) {
+  const buttons = bossForm.querySelectorAll('button');
+  buttons.forEach(button => { button.disabled = true; });
+  bossError.hidden = true;
+  try {
+    const response = await fetch('/api/boss', { method, headers: data ? { 'Content-Type': 'application/json' } : {}, body: data ? JSON.stringify(data) : undefined });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    Object.assign(bossState, await response.json());
+    renderBoss();
+    bossDialog.close();
+  } catch {
+    bossFormError('boss.error');
+  } finally {
+    buttons.forEach(button => { button.disabled = false; });
+  }
+}
+document.querySelector('#boss-edit').addEventListener('click', openBossEditor);
+document.querySelector('#boss-cancel').addEventListener('click', () => bossDialog.close());
+document.querySelector('#boss-clear').addEventListener('click', () => updateBoss('DELETE'));
+bossForm.addEventListener('submit', event => {
+  event.preventDefault();
+  const emote = bossForm.querySelector('input[name="emote"]:checked')?.value;
+  if (!emote) return bossFormError('boss.required');
+  if ([...bossText.value].length > 160) return bossFormError('boss.tooLong');
+  updateBoss('PUT', { emote, text: bossText.value });
+});
+fetch('/api/boss').then(r => { if (!r.ok) throw new Error(); return r.json(); }).then(data => { if (!bossStreamReceived) { bossState = data; renderBoss(); } }).catch(() => {});
 
 function renderPanel() {
   panel.replaceChildren(
@@ -438,9 +524,9 @@ app.canvas.addEventListener('pointermove', (e) => {
   const session = hit && sessions.find((x) => x.name === hit);
   let subtitle = hit && statusText(session.status);
   let agent = session?.agent;
-  if (!hit && managerSprite) {
+  if (!hit && managerSprite && managerSprite.visible) {
     const r = spriteRect(managerSprite);
-    if (lx >= r.x && lx < r.x + r.w && ly >= r.y && ly < r.y + r.h) [title, subtitle, agent] = [MANAGER.name, statusText(MANAGER.status), null];
+    if (lx >= r.x && lx < r.x + r.w && ly >= r.y && ly < r.y + r.h) [title, subtitle, agent] = [MANAGER.name, bossState.text, null];
   }
   if (!title) {
     tooltip.hidden = true;
@@ -484,6 +570,7 @@ if (!DEMO) {
       alive();
       setSessions(JSON.parse(e.data));
     };
+    source.addEventListener('boss', e => { alive(); bossStreamReceived = true; Object.assign(bossState, JSON.parse(e.data)); renderBoss(); });
     source.addEventListener('ping', alive);
     source.onerror = () => (link.downSince ??= Date.now());
   };

@@ -50,3 +50,24 @@ test('retângulos e nomes inválidos são descartados', () => {
   assert.deepEqual(items, { plant: [1, 2, 3, 4] });
   assert.deepEqual(customItems({ items: [] }, {}, { log: () => {} }), {});
 });
+
+test('emotes custom precisam apontar para sprites disponíveis', async () => {
+  const { emoteCatalog } = await import('./sheets.js');
+  const dir = configWith('ui', { items: { iconNovo: [0, 30, 9, 9] }, emotes: { novo: 'iconNovo', heart: 'iconNovo', broken: 'missing', proto: 'toString' } });
+  const catalog = emoteCatalog(loadSheets({ configDir: dir, log: () => {} }));
+  assert.equal(catalog.novo, 'iconNovo');
+  assert.equal(catalog.heart, 'iconNovo');
+  assert.equal(catalog.broken, undefined);
+  assert.equal(catalog.proto, undefined);
+});
+
+test('mapa custom nulo não impede a inicialização', () => {
+  const dir = configWith('ui', null);
+  assert.deepEqual(loadSheets({ configDir: dir, log: () => {} }), {});
+});
+
+test('emote custom pode usar sprite padrão sem acrescentar itens', async () => {
+  const { emoteCatalog } = await import('./sheets.js');
+  const dir = configWith('ui', { items: {}, emotes: { love: 'iconHeart' } });
+  assert.equal(emoteCatalog(loadSheets({ configDir: dir, log: () => {} })).love, 'iconHeart');
+});
